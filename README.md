@@ -1,25 +1,24 @@
 # Flink & Kafka Demo (Low Memory Profile)
 
-This project demonstrates a simple "Hello World" integration between Apache Flink and Apache Kafka. 
-It is optimized for low-memory environments.
+Apache Flink and Apache Kafka stream processing demo (optimized for low-memory environments).
 
 ## Monitoring & Access
 - **Flink Dashboard**: [http://localhost:8081](http://localhost:8081)
 - **Kafka UI**: [http://localhost:8080](http://localhost:8080) (Visualize topics and messages)
-- **Kafka Broker**: [localhost:9092](localhost:9092)
+- **Kafka Broker**: `localhost:9092` 
 
 ## Architecture
 - **Kafka (KRaft mode)**: Runs without Zookeeper to save RAM.
 - **Flink Cluster**: Includes 1 JobManager and 1 TaskManager (1 slot).
 - **SimpleProducer**: A Java application that sends messages to Kafka.
-- **StreamingJob**: A Flink job that consumes from Kafka, transforms data to uppercase, and prints it.
+- **StreamingJob**: A Flink job that consumes from Kafka, transforms them on the fly and generates analytics.
 
 ## Prerequisites
 - Docker and Docker Compose
 - Java 11
 - Maven (optional, can use Docker for building)
 
-## Quick Start (via Makefile)
+## Quick Start
 
 ### 1. Start the Infrastructure
 ```bash
@@ -56,7 +55,6 @@ You can see Flink's output in the TaskManager logs:
 ```bash
 make logs
 ```
-Look for lines starting with `taskmanager  |`.
 
 ## Memory Management
 The environment is limited to approximately 2-3GB of RAM total:

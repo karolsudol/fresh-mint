@@ -24,8 +24,9 @@ init-topics:
 up:
 	docker compose up -d
 	@echo "\n🚀 Services started!"
-	@echo "📊 Flink Dashboard: http://localhost:8081"
-	@echo "🔍 Kafka UI:        http://localhost:8080"
+	@echo "📊 Flink Dashboard: [http://localhost:8081]"
+	@echo "🔍 Kafka UI:        [http://localhost:8080]"
+	@echo "🌐 Kafka REST:      [http://localhost:8082]"
 	@echo "📡 Kafka Broker:    localhost:9092"
 
 stop:
@@ -34,8 +35,9 @@ stop:
 start:
 	docker compose start
 	@echo "\n✅ Services resumed!"
-	@echo "📊 Flink Dashboard: http://localhost:8081"
-	@echo "🔍 Kafka UI:        http://localhost:8080"
+	@echo "📊 Flink Dashboard: [http://localhost:8081]"
+	@echo "🔍 Kafka UI:        [http://localhost:8080]"
+	@echo "🌐 Kafka REST:      [http://localhost:8082]"
 	@echo "📡 Kafka Broker:    localhost:9092"
 
 down:
@@ -45,7 +47,7 @@ build:
 	mvn clean package -DskipTests
 
 build-docker:
-	docker run --rm -v "$$(pwd)":/usr/src/mymaven -w /usr/src/mymaven maven:3.9.6-eclipse-temurin-11 mvn clean package -DskipTests
+	docker run --rm -v "$$(pwd)":/usr/src/mymaven -w /usr/src/mymaven maven:3.9.9-eclipse-temurin-11 mvn clean package -DskipTests
 
 run-producer:
 	BOOTSTRAP_SERVERS=localhost:9092 java -cp $(JAR_FILE) org.example.kafka.SimpleProducer
