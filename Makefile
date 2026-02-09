@@ -14,8 +14,12 @@ help:
 	@echo "  build-docker    - Build the project using Maven in Docker"
 	@echo "  run-producer    - Run the Kafka producer locally"
 	@echo "  run-flink-local - Run the Flink job locally"
+	@echo "  init-topics     - Create required Kafka topics"
 	@echo "  submit-flink    - Submit the Flink job to the cluster"
 	@echo "  logs            - Show docker logs"
+
+init-topics:
+	docker compose exec kafka kafka-topics --create --topic input-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists
 
 up:
 	docker compose up -d

@@ -36,7 +36,12 @@ Otherwise, use Docker to build:
 make build-docker
 ```
 
-### 3. Submit the Flink Job
+### 3. Initialize Topics
+```bash
+make init-topics
+```
+
+### 4. Submit the Flink Job
 ```bash
 make submit-flink
 ```
