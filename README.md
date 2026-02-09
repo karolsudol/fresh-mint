@@ -3,6 +3,11 @@
 This project demonstrates a simple "Hello World" integration between Apache Flink and Apache Kafka. 
 It is optimized for low-memory environments.
 
+## Monitoring & Access
+- **Flink Dashboard**: [http://localhost:8081](http://localhost:8081)
+- **Kafka UI**: [http://localhost:8080](http://localhost:8080) (Visualize topics and messages)
+- **Kafka Broker**: [localhost:9092](localhost:9092)
+
 ## Architecture
 - **Kafka (KRaft mode)**: Runs without Zookeeper to save RAM.
 - **Flink Cluster**: Includes 1 JobManager and 1 TaskManager (1 slot).

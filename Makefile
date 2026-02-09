@@ -19,12 +19,20 @@ help:
 
 up:
 	docker compose up -d
+	@echo "\n🚀 Services started!"
+	@echo "📊 Flink Dashboard: http://localhost:8081"
+	@echo "🔍 Kafka UI:        http://localhost:8080"
+	@echo "📡 Kafka Broker:    localhost:9092"
 
 stop:
 	docker compose stop
 
 start:
 	docker compose start
+	@echo "\n✅ Services resumed!"
+	@echo "📊 Flink Dashboard: http://localhost:8081"
+	@echo "🔍 Kafka UI:        http://localhost:8080"
+	@echo "📡 Kafka Broker:    localhost:9092"
 
 down:
 	docker compose down
