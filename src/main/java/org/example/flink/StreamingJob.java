@@ -8,18 +8,20 @@ import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StreamingJob {
+    private static final Logger LOG = LoggerFactory.getLogger(StreamingJob.class);
 
     public static void main(String[] args) throws Exception {
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        // --- NEW: Enable Checkpointing (State Management) ---
         // Every 10 seconds a snapshot of the state is taken
         env.enableCheckpointing(10000);
 
         String bootstrapServers = System.getenv().getOrDefault("BOOTSTRAP_SERVERS", "kafka:29092");
-        System.out.println("Flink Job connecting to Kafka at: " + bootstrapServers);
+        LOG.info("Flink Job connecting to Kafka at: {}", bootstrapServers);
 
         KafkaSource<String> source = KafkaSource.<String>builder()
                 .setBootstrapServers(bootstrapServers)
@@ -31,13 +33,16 @@ public class StreamingJob {
 
         DataStream<String> stream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source");
 
-        // --- NEW: Stateful Analytics (Running Count) ---
+        // Stateful Analytics (Running Count)
         stream
-              .map(s -> Tuple2.of("TotalMessages", 1))
-              .returns(Types.TUPLE(Types.STRING, Types.INT))
+              .map(s -> Tuple2.of("TotalMessages", 1L))
+              .returns(Types.TUPLE(Types.STRING, Types.LONG))
               .keyBy(value -> value.f0) // Group by the word "TotalMessages"
               .sum(1)                   // Automatically maintains a running sum in Flink State
-              .print();
+              .map(result -> {
+                  LOG.info("Analytics Result: count={}", result.f1);
+                  return result;
+              });
 
         env.execute("Stateful Flink Analytics Demo");
     }
