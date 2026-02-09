@@ -39,9 +39,11 @@ public class StreamingJob {
               .returns(Types.TUPLE(Types.STRING, Types.LONG))
               .keyBy(value -> value.f0) // Group by the word "TotalMessages"
               .sum(1)                   // Automatically maintains a running sum in Flink State
-              .map(result -> {
-                  LOG.info("Analytics Result: count={}", result.f1);
-                  return result;
+              .addSink(new org.apache.flink.streaming.api.functions.sink.SinkFunction<Tuple2<String, Long>>() {
+                  @Override
+                  public void invoke(Tuple2<String, Long> value, Context context) {
+                      LOG.info("Analytics Result: count={}", value.f1);
+                  }
               });
 
         env.execute("Stateful Flink Analytics Demo");
