@@ -1,4 +1,3 @@
-version: "3.8"
 services:
   # Kafka in KRaft mode (No Zookeeper)
   kafka:
@@ -36,6 +35,8 @@ services:
     ports:
       - "8081:8081"
     command: jobmanager
+    volumes:
+      - ./target:/opt/flink/usrlib
     environment:
       - |
         FLINK_PROPERTIES=
@@ -48,6 +49,8 @@ services:
     depends_on:
       - jobmanager
     command: taskmanager
+    volumes:
+      - ./target:/opt/flink/usrlib
     environment:
       - |
         FLINK_PROPERTIES=
