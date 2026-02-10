@@ -2,18 +2,9 @@
 
 Hands-on demo for learning Apache Flink and Apache Kafka streaming concepts through practical examples.
 
-## Current Program
+## Programs
 
-**StreamingJob** - Stateful message counter demonstrating:
-- Real-time stream processing with Kafka source and sink
-- Stateful aggregation (running count maintained in Flink state)
-- Fault-tolerant checkpointing (every 10 seconds)
-- KeyedStream processing with automatic state management
-
-## Learning Programs
-
-Additional Flink jobs to practice core streaming concepts:
-
+- **StreamingJob** - Stateful message counter (running count, checkpointing, KeyedStream)
 - **WindowingJob** - Time-based windowing (tumbling, sliding, session windows)
 - **EventTimeJob** - Event time vs processing time, watermarks, late data handling
 - **StateTypesJob** - State management (ValueState, ListState, MapState, ReducingState)
