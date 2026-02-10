@@ -43,6 +43,27 @@
       <version>3.4.0</version>
     </dependency>
 
+    <!-- Apache Iceberg for long-term state storage (local Parquet files) -->
+    <dependency>
+      <groupId>org.apache.iceberg</groupId>
+      <artifactId>iceberg-flink-runtime-1.17</artifactId>
+      <version>1.4.3</version>
+    </dependency>
+
+    <!-- RocksDB State Backend for production-grade state management -->
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-statebackend-rocksdb</artifactId>
+      <version>${flink.version}</version>
+    </dependency>
+
+    <!-- JSON processing for data generators -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.15.2</version>
+    </dependency>
+
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>

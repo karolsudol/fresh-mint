@@ -15,8 +15,9 @@ help:
 	@echo "  run-producer    - Run the Kafka producer locally"
 	@echo "  run-flink-local - Run the Flink job locally"
 	@echo "  init-topics     - Create required Kafka topics"
-	@echo "  send-message    - Send a test message to Kafka via REST API"
-	@echo "  submit-flink    - Submit the Flink job to the cluster"
+	@echo "  send-message    - Send a test message to Kafka via native producer"
+	@echo "  submit-flink    - Submit StreamingJob to the cluster"
+	@echo "  submit-windowing - Submit WindowingJob to the cluster"
 	@echo "  cancel-flink    - Cancel all running Flink jobs"
 	@echo "  check-count     - Check the current message count from Flink"
 	@echo "  watch-output    - Watch output-topic for real-time state updates"
@@ -27,10 +28,11 @@ init-topics:
 
 send-message:
 	@echo "Sending test message to Kafka..."
-	@curl -X POST http://localhost:8082/topics/input-topic \
-		-H "Content-Type: application/vnd.kafka.json.v2+json" \
-		-d '{"records":[{"value":{"userId":"user123","action":"test","timestamp":"'$$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}}]}' \
-		2>/dev/null | grep -o '"offset":[0-9]*' || echo "Message sent!"
+	@echo '{"userId":"user123","action":"test","timestamp":"'$$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' | \
+		docker compose exec -T kafka kafka-console-producer \
+		--bootstrap-server localhost:9092 \
+		--topic input-topic
+	@echo "✅ Message sent!"
 
 check-count:
 	@echo "📊 Current message count from Flink:"
@@ -45,7 +47,6 @@ up:
 	@echo "\n🚀 Services started!"
 	@echo "📊 Flink Dashboard: [http://localhost:8081]"
 	@echo "🔍 Kafka UI:        [http://localhost:8080]"
-	@echo "🌐 Kafka REST:      [http://localhost:8082]"
 	@echo "📡 Kafka Broker:    localhost:9092"
 
 stop:
@@ -56,7 +57,6 @@ start:
 	@echo "\n✅ Services resumed!"
 	@echo "📊 Flink Dashboard: [http://localhost:8081]"
 	@echo "🔍 Kafka UI:        [http://localhost:8080]"
-	@echo "🌐 Kafka REST:      [http://localhost:8082]"
 	@echo "📡 Kafka Broker:    localhost:9092"
 
 down:
@@ -78,8 +78,14 @@ submit-flink:
 	@echo "📋 Creating Kafka topics if they don't exist..."
 	@docker compose exec kafka kafka-topics --create --topic input-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists 2>/dev/null || true
 	@docker compose exec kafka kafka-topics --create --topic output-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists 2>/dev/null || true
-	@echo "🚀 Submitting Flink job..."
+	@echo "🚀 Submitting StreamingJob..."
 	docker compose exec jobmanager flink run /opt/flink/usrlib/flink-kafka-demo-1.0-SNAPSHOT.jar
+
+submit-windowing:
+	@echo "📋 Creating Kafka topics if they don't exist..."
+	@docker compose exec kafka kafka-topics --create --topic input-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists 2>/dev/null || true
+	@echo "🪟 Submitting WindowingJob..."
+	docker compose exec jobmanager flink run --class org.example.flink.WindowingJob /opt/flink/usrlib/flink-kafka-demo-1.0-SNAPSHOT.jar
 
 cancel-flink:
 	@echo "🛑 Cancelling all running Flink jobs..."

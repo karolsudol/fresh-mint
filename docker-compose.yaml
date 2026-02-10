@@ -58,7 +58,7 @@ services:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
-        taskmanager.numberOfTaskSlots: 1
+        taskmanager.numberOfTaskSlots: 4
     mem_limit: 1.5g
 
   # Kafka UI for visual monitoring
@@ -73,17 +73,3 @@ services:
       KAFKA_CLUSTERS_0_METRICS_PORT: 9101
       DYNAMIC_CONFIG_ENABLED: 'true'
     mem_limit: 768m
-
-  # Kafka REST Proxy for HTTP interface
-  rest-proxy:
-    image: confluentinc/cp-kafka-rest:7.8.0
-    container_name: flink-kafka-rest
-    depends_on:
-      - kafka
-    ports:
-      - "8082:8082"
-    environment:
-      KAFKA_REST_HOST_NAME: rest-proxy
-      KAFKA_REST_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
-    mem_limit: 512m

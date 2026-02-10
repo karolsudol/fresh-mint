@@ -1,14 +1,15 @@
-# Flink & Kafka Stateful Analytics Demo
+# 🌿 Fresh Mint ✨
 
-Apache Flink and Apache Kafka stream processing demo with **stateful analytics** (optimized for low-memory environments).
+Hands-on demo for learning Apache Flink and Apache Kafka streaming concepts through practical examples.
 
-## What It Does
+## Programs
 
-This demo shows **real-time stateful stream processing**:
-- Messages flow into Kafka's `input-topic`
-- Flink maintains a **running count** of all messages (stored in Flink state)
-- Results are written to Kafka's `output-topic` as JSON
-- State is **fault-tolerant** with automatic checkpointing every 10 seconds
+- **StreamingJob** - Stateful message counter (running count, checkpointing, KeyedStream)
+- **WindowingJob** - Time-based windowing (tumbling, sliding, session windows)
+- **EventTimeJob** - Event time vs processing time, watermarks, late data handling
+- **StateTypesJob** - State management (ValueState, ListState, MapState, ReducingState)
+- **StreamJoinJob** - Stream joins (interval join, window join)
+- **IcebergSinkJob** - Long-term state persistence with Apache Iceberg (local Parquet files)
 
 ## Monitoring & Access
 
@@ -16,7 +17,6 @@ This demo shows **real-time stateful stream processing**:
 |---------|-----|-------------|
 | **Flink Dashboard** | [http://localhost:8081](http://localhost:8081) | Monitor jobs, checkpoints, metrics |
 | **Kafka UI** | [http://localhost:8080](http://localhost:8080) | Browse topics and messages |
-| **Kafka REST API** | [http://localhost:8082](http://localhost:8082) | HTTP interface to Kafka |
 | **Kafka Broker** | `localhost:9092` | Native Kafka protocol (TCP) |
 
 ## Architecture
@@ -134,19 +134,29 @@ Producer → input-topic → Flink (Stateful Processing) → output-topic → Co
 
 **KeyBy**: Groups messages by key (`"TotalMessages"`) to enable stateful processing.
 
-## Sending Messages via REST API
+## Sending Messages
+
+Use `make send-message` or manually via Kafka console producer:
 
 ```bash
-curl -X POST http://localhost:8082/topics/input-topic \
-  -H "Content-Type: application/vnd.kafka.json.v2+json" \
-  -d '{"records":[{"value":{"userId":"user123","action":"click"}}]}'
+echo '{"userId":"user123","action":"click"}' | \
+  docker compose exec -T kafka kafka-console-producer \
+  --bootstrap-server localhost:9092 \
+  --topic input-topic
 ```
+
+## What's Included
+
+- **Kafka** (KRaft mode - no Zookeeper)
+- **Flink** (JobManager + TaskManager, 4 slots)
+- **Kafka UI** - http://localhost:8080
+- **Apache Iceberg** - Local Parquet files in `./iceberg-warehouse/`
+- **RocksDB** - State backend
 
 ## Memory Management
 
-The environment is limited to approximately 4.3GB of RAM total:
+The environment uses approximately 3.3GB of RAM total:
 - Kafka: 1GB
-- Kafka REST: 512MB
 - Kafka UI: 768MB
 - Flink JobManager: 1GB
 - Flink TaskManager: 1.5GB
@@ -178,8 +188,15 @@ make submit-flink
 ### JMX connection errors in Kafka UI
 These are non-critical warnings. Kafka UI can't collect JMX metrics, but all core functionality works fine.
 
-## Learn More
+## Dependencies
 
-- [Apache Flink Documentation](https://flink.apache.org/)
-- [Apache Kafka Documentation](https://kafka.apache.org/)
-- [Flink State Documentation](https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/stateful-stream-processing/)
+- Flink 1.17.1 + Kafka connector
+- Apache Iceberg (local Parquet files)
+- RocksDB state backend
+- Jackson JSON
+
+## Resources
+
+- [Flink Documentation](https://flink.apache.org/)
+- [Kafka Documentation](https://kafka.apache.org/)
+- [Iceberg Documentation](https://iceberg.apache.org/)
