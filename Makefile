@@ -16,7 +16,8 @@ help:
 	@echo "  run-flink-local - Run the Flink job locally"
 	@echo "  init-topics     - Create required Kafka topics"
 	@echo "  send-message    - Send a test message to Kafka via native producer"
-	@echo "  submit-flink    - Submit the Flink job to the cluster"
+	@echo "  submit-flink    - Submit StreamingJob to the cluster"
+	@echo "  submit-windowing - Submit WindowingJob to the cluster"
 	@echo "  cancel-flink    - Cancel all running Flink jobs"
 	@echo "  check-count     - Check the current message count from Flink"
 	@echo "  watch-output    - Watch output-topic for real-time state updates"
@@ -77,8 +78,14 @@ submit-flink:
 	@echo "📋 Creating Kafka topics if they don't exist..."
 	@docker compose exec kafka kafka-topics --create --topic input-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists 2>/dev/null || true
 	@docker compose exec kafka kafka-topics --create --topic output-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists 2>/dev/null || true
-	@echo "🚀 Submitting Flink job..."
+	@echo "🚀 Submitting StreamingJob..."
 	docker compose exec jobmanager flink run /opt/flink/usrlib/flink-kafka-demo-1.0-SNAPSHOT.jar
+
+submit-windowing:
+	@echo "📋 Creating Kafka topics if they don't exist..."
+	@docker compose exec kafka kafka-topics --create --topic input-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists 2>/dev/null || true
+	@echo "🪟 Submitting WindowingJob..."
+	docker compose exec jobmanager flink run --class org.example.flink.WindowingJob /opt/flink/usrlib/flink-kafka-demo-1.0-SNAPSHOT.jar
 
 cancel-flink:
 	@echo "🛑 Cancelling all running Flink jobs..."
