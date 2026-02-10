@@ -1,14 +1,24 @@
-# Flink & Kafka Stateful Analytics Demo
+# 🌿 Fresh Mint ✨
 
-Apache Flink and Apache Kafka stream processing demo with **stateful analytics** (optimized for low-memory environments).
+Hands-on demo for learning Apache Flink and Apache Kafka streaming concepts through practical examples.
 
-## What It Does
+## Current Program
 
-This demo shows **real-time stateful stream processing**:
-- Messages flow into Kafka's `input-topic`
-- Flink maintains a **running count** of all messages (stored in Flink state)
-- Results are written to Kafka's `output-topic` as JSON
-- State is **fault-tolerant** with automatic checkpointing every 10 seconds
+**StreamingJob** - Stateful message counter demonstrating:
+- Real-time stream processing with Kafka source and sink
+- Stateful aggregation (running count maintained in Flink state)
+- Fault-tolerant checkpointing (every 10 seconds)
+- KeyedStream processing with automatic state management
+
+## Learning Programs
+
+Additional Flink jobs to practice core streaming concepts:
+
+- **WindowingJob** - Time-based windowing (tumbling, sliding, session windows)
+- **EventTimeJob** - Event time vs processing time, watermarks, late data handling
+- **StateTypesJob** - State management (ValueState, ListState, MapState, ReducingState)
+- **StreamJoinJob** - Stream joins (interval join, window join)
+- **IcebergSinkJob** - Long-term state persistence with Apache Iceberg (local Parquet files)
 
 ## Monitoring & Access
 
