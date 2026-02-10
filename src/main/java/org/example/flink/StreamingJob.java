@@ -4,6 +4,8 @@ import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
+import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
+import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -33,18 +35,35 @@ public class StreamingJob {
 
         DataStream<String> stream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source");
 
+        // Kafka Sink for output
+        KafkaSink<String> sink = KafkaSink.<String>builder()
+                .setBootstrapServers(bootstrapServers)
+                .setRecordSerializer(KafkaRecordSerializationSchema.builder()
+                        .setTopic("output-topic")
+                        .setValueSerializationSchema(new SimpleStringSchema())
+                        .build())
+                .build();
+
         // Stateful Analytics (Running Count)
-        stream
+        DataStream<Tuple2<String, Long>> counts = stream
               .map(s -> Tuple2.of("TotalMessages", 1L))
               .returns(Types.TUPLE(Types.STRING, Types.LONG))
               .keyBy(value -> value.f0) // Group by the word "TotalMessages"
-              .sum(1)                   // Automatically maintains a running sum in Flink State
-              .addSink(new org.apache.flink.streaming.api.functions.sink.SinkFunction<Tuple2<String, Long>>() {
-                  @Override
-                  public void invoke(Tuple2<String, Long> value, Context context) {
-                      LOG.info("Analytics Result: count={}", value.f1);
-                  }
-              });
+              .sum(1);                   // Automatically maintains a running sum in Flink State
+
+        // Log the results
+        counts.addSink(new org.apache.flink.streaming.api.functions.sink.SinkFunction<Tuple2<String, Long>>() {
+            @Override
+            public void invoke(Tuple2<String, Long> value, Context context) {
+                LOG.info("Analytics Result: count={}", value.f1);
+            }
+        });
+
+        // Write results to Kafka output topic
+        counts
+            .map(tuple -> String.format("{\"metric\":\"%s\",\"count\":%d,\"timestamp\":\"%s\"}",
+                    tuple.f0, tuple.f1, java.time.Instant.now().toString()))
+            .sinkTo(sink);
 
         env.execute("Stateful Flink Analytics Demo");
     }

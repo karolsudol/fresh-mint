@@ -2,7 +2,7 @@
 
 JAR_FILE=target/flink-kafka-demo-1.0-SNAPSHOT.jar
 
-.PHONY: up down stop start build build-docker run-producer run-flink-local submit-flink send-message logs help
+.PHONY: up down stop start build build-docker run-producer run-flink-local submit-flink cancel-flink send-message check-count watch-output logs help
 
 help:
 	@echo "Available commands:"
@@ -17,6 +17,9 @@ help:
 	@echo "  init-topics     - Create required Kafka topics"
 	@echo "  send-message    - Send a test message to Kafka via REST API"
 	@echo "  submit-flink    - Submit the Flink job to the cluster"
+	@echo "  cancel-flink    - Cancel all running Flink jobs"
+	@echo "  check-count     - Check the current message count from Flink"
+	@echo "  watch-output    - Watch output-topic for real-time state updates"
 	@echo "  logs            - Show docker logs"
 
 init-topics:
@@ -28,6 +31,14 @@ send-message:
 		-H "Content-Type: application/vnd.kafka.json.v2+json" \
 		-d '{"records":[{"value":{"userId":"user123","action":"test","timestamp":"'$$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}}]}' \
 		2>/dev/null | grep -o '"offset":[0-9]*' || echo "Message sent!"
+
+check-count:
+	@echo "📊 Current message count from Flink:"
+	@docker compose logs taskmanager 2>/dev/null | grep "Analytics Result" | tail -1 || echo "No results yet"
+
+watch-output:
+	@echo "👀 Watching output-topic for state updates (Ctrl+C to stop)..."
+	@docker compose exec kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic output-topic --from-beginning --property print.timestamp=true
 
 up:
 	docker compose up -d
@@ -64,7 +75,15 @@ run-flink-local:
 	BOOTSTRAP_SERVERS=localhost:9092 java -cp $(JAR_FILE) org.example.flink.StreamingJob
 
 submit-flink:
+	@echo "📋 Creating Kafka topics if they don't exist..."
+	@docker compose exec kafka kafka-topics --create --topic input-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists 2>/dev/null || true
+	@docker compose exec kafka kafka-topics --create --topic output-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists 2>/dev/null || true
+	@echo "🚀 Submitting Flink job..."
 	docker compose exec jobmanager flink run /opt/flink/usrlib/flink-kafka-demo-1.0-SNAPSHOT.jar
+
+cancel-flink:
+	@echo "🛑 Cancelling all running Flink jobs..."
+	@docker compose exec jobmanager flink list 2>/dev/null | grep RUNNING | awk '{print $$4}' | xargs -r -I {} docker compose exec jobmanager flink cancel {} || echo "No running jobs to cancel"
 
 logs:
 	docker compose logs -f
