@@ -15,7 +15,7 @@ help:
 	@echo "  run-producer    - Run the Kafka producer locally"
 	@echo "  run-flink-local - Run the Flink job locally"
 	@echo "  init-topics     - Create required Kafka topics"
-	@echo "  send-message    - Send a test message to Kafka via REST API"
+	@echo "  send-message    - Send a test message to Kafka via native producer"
 	@echo "  submit-flink    - Submit the Flink job to the cluster"
 	@echo "  cancel-flink    - Cancel all running Flink jobs"
 	@echo "  check-count     - Check the current message count from Flink"
@@ -27,10 +27,11 @@ init-topics:
 
 send-message:
 	@echo "Sending test message to Kafka..."
-	@curl -X POST http://localhost:8082/topics/input-topic \
-		-H "Content-Type: application/vnd.kafka.json.v2+json" \
-		-d '{"records":[{"value":{"userId":"user123","action":"test","timestamp":"'$$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}}]}' \
-		2>/dev/null | grep -o '"offset":[0-9]*' || echo "Message sent!"
+	@echo '{"userId":"user123","action":"test","timestamp":"'$$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' | \
+		docker compose exec -T kafka kafka-console-producer \
+		--bootstrap-server localhost:9092 \
+		--topic input-topic
+	@echo "✅ Message sent!"
 
 check-count:
 	@echo "📊 Current message count from Flink:"
@@ -45,7 +46,6 @@ up:
 	@echo "\n🚀 Services started!"
 	@echo "📊 Flink Dashboard: [http://localhost:8081]"
 	@echo "🔍 Kafka UI:        [http://localhost:8080]"
-	@echo "🌐 Kafka REST:      [http://localhost:8082]"
 	@echo "📡 Kafka Broker:    localhost:9092"
 
 stop:
@@ -56,7 +56,6 @@ start:
 	@echo "\n✅ Services resumed!"
 	@echo "📊 Flink Dashboard: [http://localhost:8081]"
 	@echo "🔍 Kafka UI:        [http://localhost:8080]"
-	@echo "🌐 Kafka REST:      [http://localhost:8082]"
 	@echo "📡 Kafka Broker:    localhost:9092"
 
 down:

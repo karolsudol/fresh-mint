@@ -17,7 +17,6 @@ Hands-on demo for learning Apache Flink and Apache Kafka streaming concepts thro
 |---------|-----|-------------|
 | **Flink Dashboard** | [http://localhost:8081](http://localhost:8081) | Monitor jobs, checkpoints, metrics |
 | **Kafka UI** | [http://localhost:8080](http://localhost:8080) | Browse topics and messages |
-| **Kafka REST API** | [http://localhost:8082](http://localhost:8082) | HTTP interface to Kafka |
 | **Kafka Broker** | `localhost:9092` | Native Kafka protocol (TCP) |
 
 ## Architecture
@@ -135,12 +134,15 @@ Producer → input-topic → Flink (Stateful Processing) → output-topic → Co
 
 **KeyBy**: Groups messages by key (`"TotalMessages"`) to enable stateful processing.
 
-## Sending Messages via REST API
+## Sending Messages
+
+Use `make send-message` or manually via Kafka console producer:
 
 ```bash
-curl -X POST http://localhost:8082/topics/input-topic \
-  -H "Content-Type: application/vnd.kafka.json.v2+json" \
-  -d '{"records":[{"value":{"userId":"user123","action":"click"}}]}'
+echo '{"userId":"user123","action":"click"}' | \
+  docker compose exec -T kafka kafka-console-producer \
+  --bootstrap-server localhost:9092 \
+  --topic input-topic
 ```
 
 ## What's Included
@@ -148,15 +150,13 @@ curl -X POST http://localhost:8082/topics/input-topic \
 - **Kafka** (KRaft mode - no Zookeeper)
 - **Flink** (JobManager + TaskManager, 4 slots)
 - **Kafka UI** - http://localhost:8080
-- **Kafka REST** - http://localhost:8082
 - **Apache Iceberg** - Local Parquet files in `./iceberg-warehouse/`
 - **RocksDB** - State backend
 
 ## Memory Management
 
-The environment is limited to approximately 3.8GB of RAM total:
+The environment uses approximately 3.3GB of RAM total:
 - Kafka: 1GB
-- Kafka REST: 512MB
 - Kafka UI: 768MB
 - Flink JobManager: 1GB
 - Flink TaskManager: 1.5GB
