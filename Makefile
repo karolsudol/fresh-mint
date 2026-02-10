@@ -2,7 +2,7 @@
 
 JAR_FILE=target/flink-kafka-demo-1.0-SNAPSHOT.jar
 
-.PHONY: up down stop start build build-docker run-producer run-flink-local submit-flink logs help
+.PHONY: up down stop start build build-docker run-producer run-flink-local submit-flink send-message logs help
 
 help:
 	@echo "Available commands:"
@@ -15,11 +15,19 @@ help:
 	@echo "  run-producer    - Run the Kafka producer locally"
 	@echo "  run-flink-local - Run the Flink job locally"
 	@echo "  init-topics     - Create required Kafka topics"
+	@echo "  send-message    - Send a test message to Kafka via REST API"
 	@echo "  submit-flink    - Submit the Flink job to the cluster"
 	@echo "  logs            - Show docker logs"
 
 init-topics:
 	docker compose exec kafka kafka-topics --create --topic input-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists
+
+send-message:
+	@echo "Sending test message to Kafka..."
+	@curl -X POST http://localhost:8082/topics/input-topic \
+		-H "Content-Type: application/vnd.kafka.json.v2+json" \
+		-d '{"records":[{"value":{"userId":"user123","action":"test","timestamp":"'$$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}}]}' \
+		2>/dev/null | grep -o '"offset":[0-9]*' || echo "Message sent!"
 
 up:
 	docker compose up -d
