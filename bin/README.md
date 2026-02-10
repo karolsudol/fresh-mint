@@ -142,18 +142,9 @@ curl -X POST http://localhost:8082/topics/input-topic \
   -d '{"records":[{"value":{"userId":"user123","action":"click"}}]}'
 ```
 
-## What's Included
-
-- **Kafka** (KRaft mode - no Zookeeper)
-- **Flink** (JobManager + TaskManager, 4 slots)
-- **Kafka UI** - http://localhost:8080
-- **Kafka REST** - http://localhost:8082
-- **Apache Iceberg** - Local Parquet files in `./iceberg-warehouse/`
-- **RocksDB** - State backend
-
 ## Memory Management
 
-The environment is limited to approximately 3.8GB of RAM total:
+The environment is limited to approximately 4.3GB of RAM total:
 - Kafka: 1GB
 - Kafka REST: 512MB
 - Kafka UI: 768MB
@@ -187,15 +178,8 @@ make submit-flink
 ### JMX connection errors in Kafka UI
 These are non-critical warnings. Kafka UI can't collect JMX metrics, but all core functionality works fine.
 
-## Dependencies
+## Learn More
 
-- Flink 1.17.1 + Kafka connector
-- Apache Iceberg (local Parquet files)
-- RocksDB state backend
-- Jackson JSON
-
-## Resources
-
-- [Flink Documentation](https://flink.apache.org/)
-- [Kafka Documentation](https://kafka.apache.org/)
-- [Iceberg Documentation](https://iceberg.apache.org/)
+- [Apache Flink Documentation](https://flink.apache.org/)
+- [Apache Kafka Documentation](https://kafka.apache.org/)
+- [Flink State Documentation](https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/stateful-stream-processing/)
