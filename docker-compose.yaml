@@ -1,8 +1,9 @@
+name: flink-kafka
 services:
   # Kafka in KRaft mode (No Zookeeper)
   kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    container_name: kafka
+    image: confluentinc/cp-kafka:7.8.0
+    container_name: flink-kafka-broker
     ports:
       - "9092:9092"
     environment:
@@ -31,7 +32,8 @@ services:
 
   # Flink JobManager
   jobmanager:
-    image: flink:1.17.1-java11
+    image: flink:1.18.1-java11
+    container_name: flink-jobmanager
     ports:
       - "8081:8081"
     command: jobmanager
@@ -45,7 +47,8 @@ services:
 
   # Flink TaskManager
   taskmanager:
-    image: flink:1.17.1-java11
+    image: flink:1.18.1-java11
+    container_name: flink-taskmanager
     depends_on:
       - jobmanager
     command: taskmanager
@@ -60,8 +63,8 @@ services:
 
   # Kafka UI for visual monitoring
   kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:v0.7.2
+    container_name: flink-kafka-ui
     ports:
       - "8080:8080"
     environment:
@@ -70,3 +73,17 @@ services:
       KAFKA_CLUSTERS_0_METRICS_PORT: 9101
       DYNAMIC_CONFIG_ENABLED: 'true'
     mem_limit: 768m
+
+  # Kafka REST Proxy for HTTP interface
+  rest-proxy:
+    image: confluentinc/cp-kafka-rest:7.8.0
+    container_name: flink-kafka-rest
+    depends_on:
+      - kafka
+    ports:
+      - "8082:8082"
+    environment:
+      KAFKA_REST_HOST_NAME: rest-proxy
+      KAFKA_REST_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
+    mem_limit: 512m
