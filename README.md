@@ -1,19 +1,35 @@
-# Flink & Kafka Demo (Low Memory Profile)
+# Flink & Kafka Stateful Analytics Demo
 
-Apache Flink and Apache Kafka stream processing demo (optimized for low-memory environments).
+Apache Flink and Apache Kafka stream processing demo with **stateful analytics** (optimized for low-memory environments).
+
+## What It Does
+
+This demo shows **real-time stateful stream processing**:
+- Messages flow into Kafka's `input-topic`
+- Flink maintains a **running count** of all messages (stored in Flink state)
+- Results are written to Kafka's `output-topic` as JSON
+- State is **fault-tolerant** with automatic checkpointing every 10 seconds
 
 ## Monitoring & Access
-- **Flink Dashboard**: [http://localhost:8081](http://localhost:8081)
-- **Kafka UI**: [http://localhost:8080](http://localhost:8080) (Visualize topics and messages)
-- **Kafka Broker**: `localhost:9092` 
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| **Flink Dashboard** | [http://localhost:8081](http://localhost:8081) | Monitor jobs, checkpoints, metrics |
+| **Kafka UI** | [http://localhost:8080](http://localhost:8080) | Browse topics and messages |
+| **Kafka REST API** | [http://localhost:8082](http://localhost:8082) | HTTP interface to Kafka |
+| **Kafka Broker** | `localhost:9092` | Native Kafka protocol (TCP) |
 
 ## Architecture
-- **Kafka (KRaft mode)**: Runs without Zookeeper to save RAM.
-- **Flink Cluster**: Includes 1 JobManager and 1 TaskManager (1 slot).
-- **SimpleProducer**: A Java application that sends messages to Kafka.
-- **StreamingJob**: A Flink job that consumes from Kafka, transforms them on the fly and generates analytics.
+
+- **Kafka (KRaft mode)**: No Zookeeper needed (saves RAM)
+- **Flink Cluster**: 1 JobManager + 1 TaskManager (1 slot)
+- **StreamingJob**: Flink job that maintains stateful running count
+- **Topics**:
+  - `input-topic`: Raw messages from producers
+  - `output-topic`: JSON results with stateful count
 
 ## Prerequisites
+
 - Docker and Docker Compose
 - Java 11
 - Maven (optional, can use Docker for building)
@@ -35,30 +51,103 @@ Otherwise, use Docker to build:
 make build-docker
 ```
 
-### 3. Initialize Topics
+**Note**: If containers were already running when you built, restart them to pick up the JAR:
 ```bash
-make init-topics
+docker compose restart jobmanager taskmanager
 ```
 
-### 4. Submit the Flink Job
+### 3. Submit the Flink Job
+This automatically creates topics and submits the job:
 ```bash
 make submit-flink
 ```
 
-### 4. Run the Producer
+### 4. Send Test Messages
 ```bash
-make run-producer
+make send-message    # Send a test message to Kafka
 ```
 
-### 5. Check the Output
-You can see Flink's output in the TaskManager logs:
+### 5. View Real-Time State Updates
+
+**Option 1: Watch output-topic (Recommended)**
 ```bash
-make logs
+make watch-output    # See JSON state updates in real-time
+```
+
+**Option 2: Kafka UI**
+- Go to [http://localhost:8080](http://localhost:8080)
+- Navigate to Topics → `output-topic` → Messages
+- See JSON like: `{"metric":"TotalMessages","count":5,"timestamp":"2026-02-10T12:00:00Z"}`
+
+**Option 3: Check logs**
+```bash
+make check-count     # Show latest count from Flink logs
+```
+
+## Available Commands
+
+```bash
+make help            # Show all commands
+make up              # Start/Create Kafka and Flink (background)
+make stop            # Stop containers without removing them
+make start           # Start already created/stopped containers
+make down            # Stop and REMOVE containers and networks
+make build           # Build the project using local Maven
+make build-docker    # Build the project using Maven in Docker
+make init-topics     # Create required Kafka topics
+make send-message    # Send a test message to Kafka via REST API
+make submit-flink    # Submit the Flink job to the cluster
+make cancel-flink    # Cancel all running Flink jobs
+make check-count     # Check the current message count from Flink
+make watch-output    # Watch output-topic for real-time state updates
+make logs            # Show docker logs
+```
+
+## Understanding the Data Flow
+
+```
+Producer → input-topic → Flink (Stateful Processing) → output-topic → Consumer
+                            ↓
+                      Flink State
+                   (Running Count)
+                            ↓
+                    Checkpoints
+                   (Every 10s)
+```
+
+### Kafka Concepts
+
+**Partitions**: Topics are split into partitions for parallelism. This demo uses 1 partition per topic.
+
+**Offsets**: Each message gets a sequential offset number (0, 1, 2, ...) within its partition. This is Kafka's way of tracking message position.
+
+**Example**:
+- Message 1 → `input-topic` partition 0, offset 0
+- Message 2 → `input-topic` partition 0, offset 1
+- Message 3 → `input-topic` partition 0, offset 2
+
+### Flink Concepts
+
+**State**: Flink maintains a running count in memory (and checkpoints to disk). Even if Flink restarts, it restores the count from the latest checkpoint.
+
+**Checkpoints**: Automatic snapshots of state every 10 seconds. Enables fault tolerance.
+
+**KeyBy**: Groups messages by key (`"TotalMessages"`) to enable stateful processing.
+
+## Sending Messages via REST API
+
+```bash
+curl -X POST http://localhost:8082/topics/input-topic \
+  -H "Content-Type: application/vnd.kafka.json.v2+json" \
+  -d '{"records":[{"value":{"userId":"user123","action":"click"}}]}'
 ```
 
 ## Memory Management
-The environment is limited to approximately 2-3GB of RAM total:
+
+The environment is limited to approximately 4.3GB of RAM total:
 - Kafka: 1GB
+- Kafka REST: 512MB
+- Kafka UI: 768MB
 - Flink JobManager: 1GB
 - Flink TaskManager: 1.5GB
 
@@ -76,3 +165,21 @@ The environment is limited to approximately 2-3GB of RAM total:
   ```bash
   make down
   ```
+
+## Troubleshooting
+
+### JAR file not found when submitting Flink job
+If you see "JAR file does not exist", restart the Flink containers after building:
+```bash
+docker compose restart jobmanager taskmanager
+make submit-flink
+```
+
+### JMX connection errors in Kafka UI
+These are non-critical warnings. Kafka UI can't collect JMX metrics, but all core functionality works fine.
+
+## Learn More
+
+- [Apache Flink Documentation](https://flink.apache.org/)
+- [Apache Kafka Documentation](https://kafka.apache.org/)
+- [Flink State Documentation](https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/stateful-stream-processing/)
