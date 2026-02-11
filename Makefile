@@ -91,7 +91,7 @@ submit-windowing:
 
 cancel-flink:
 	@echo "🛑 Cancelling all running Flink jobs..."
-	@docker compose exec jobmanager flink list 2>/dev/null | grep RUNNING | awk '{print $$4}' | xargs -r -I {} docker compose exec jobmanager flink cancel {} || echo "No running jobs to cancel"
+	@docker compose exec -T jobmanager flink list 2>/dev/null | grep RUNNING | awk '{print $$4}' | xargs -r -I {} docker compose exec -T jobmanager flink cancel {} || echo "No running jobs to cancel"
 
 logs:
 	docker compose logs -f
