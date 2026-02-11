@@ -2,7 +2,7 @@
 
 JAR_FILE=target/flink-kafka-demo-1.0-SNAPSHOT.jar
 
-.PHONY: up down stop start build build-docker run-producer run-flink-local submit-flink cancel-flink send-message check-count watch-output logs help
+.PHONY: up down stop start build build-docker run-producer run-flink-local submit-flink submit-windowing cancel-flink send-message check-count watch-output logs logs-flink logs-taskmanager help
 
 help:
 	@echo "Available commands:"
@@ -21,7 +21,9 @@ help:
 	@echo "  cancel-flink    - Cancel all running Flink jobs"
 	@echo "  check-count     - Check the current message count from Flink"
 	@echo "  watch-output    - Watch output-topic for real-time state updates"
-	@echo "  logs            - Show docker logs"
+	@echo "  logs            - Show all docker logs (verbose)"
+	@echo "  logs-flink      - Show only Flink job results (clean)"
+	@echo "  logs-taskmanager - Show only TaskManager logs"
 
 init-topics:
 	docker compose exec kafka kafka-topics --create --topic input-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists
@@ -93,3 +95,11 @@ cancel-flink:
 
 logs:
 	docker compose logs -f
+
+logs-flink:
+	@echo "📊 Watching Flink job results (Ctrl+C to stop)..."
+	@docker compose logs -f taskmanager | grep --line-buffered -E "Tumbling|Sliding|Session|Analytics Result"
+
+logs-taskmanager:
+	@echo "📋 TaskManager logs only (Ctrl+C to stop)..."
+	@docker compose logs -f taskmanager
