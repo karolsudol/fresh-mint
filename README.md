@@ -1,165 +1,96 @@
 # 🌿 Fresh Mint ✨
 
-Hands-on demo for learning Apache Flink and Apache Kafka streaming concepts through practical examples.
+Hands-on demo for learning Apache Flink and Apache Kafka streaming concepts through practical, real-world examples.
 
-## Programs
+## End-to-End Windowing Demo
 
-- **StreamingJob** - Stateful message counter (running count, checkpointing, KeyedStream)
-- **WindowingJob** - Time-based windowing (tumbling, sliding, session windows)
-- **EventTimeJob** - Event time vs processing time, watermarks, late data handling
-- **StateTypesJob** - State management (ValueState, ListState, MapState, ReducingState)
-- **StreamJoinJob** - Stream joins (interval join, window join)
-- **IcebergSinkJob** - Long-term state persistence with Apache Iceberg (local Parquet files)
+This project demonstrates an end-to-end streaming pipeline that uses multiple Flink jobs to perform different types of windowed aggregations on a stream of events.
 
-## Monitoring & Access
+The pipeline consists of:
+- A **Rust-based producer** that generates events and sends them to Kafka.
+- **Three Flink jobs** (Tumbling, Sliding, and Session windows) that consume the events, perform aggregations, and write results back to Kafka.
+- A **Rust-based consumer** that reads the final results from all jobs and prints them to the console.
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| **Flink Dashboard** | [http://localhost:8081](http://localhost:8081) | Monitor jobs, checkpoints, metrics |
-| **Kafka UI** | [http://localhost:8080](http://localhost:8080) | Browse topics and messages |
-| **Kafka Broker** | `localhost:9092` | Native Kafka protocol (TCP) |
-
-## Architecture
-
-- **Kafka (KRaft mode)**: No Zookeeper needed (saves RAM)
-- **Flink Cluster**: 1 JobManager + 1 TaskManager (1 slot)
-- **StreamingJob**: Flink job that maintains stateful running count
-- **Topics**:
-  - `input-topic`: Raw messages from producers
-  - `output-topic`: JSON results with stateful count
-
-## Prerequisites
+### Prerequisites
 
 - Docker and Docker Compose
 - Java 11
-- Maven (optional, can use Docker for building)
+- Maven
+- Rust (install via [rustup.rs](https://rustup.rs/))
 
-## Quick Start
+### How to Run the Pipeline
 
-### 1. Start the Infrastructure
+**1. Start the Infrastructure**
+This will bring up Kafka, the Flink cluster, and Kafka UI using Docker Compose.
 ```bash
 make up
 ```
+You can monitor the services at:
+- **Flink Dashboard**: [http://localhost:8081](http://localhost:8081)
+- **Kafka UI**: [http://localhost:8080](http://localhost:8080)
 
-### 2. Build the Project
-If you have Maven installed locally:
+**2. Build All Artifacts**
+First, build the Flink jobs JAR, then compile the two Rust applications.
 ```bash
 make build
+make build-rust
 ```
-Otherwise, use Docker to build:
+
+**3. Submit the Flink Jobs**
+This command will automatically create the necessary Kafka topics and submit all three windowing jobs to the Flink cluster.
 ```bash
-make build-docker
+make submit-all
+```
+You should see `TumblingWindowJob`, `SlidingWindowJob`, and `SessionWindowJob` running in the Flink Dashboard.
+
+**4. Run the Producer and Consumer**
+Open two separate terminal windows for this step.
+
+- **In your first terminal**, start the event producer. It will run continuously.
+  ```bash
+  make run-producer
+  ```
+
+- **In your second terminal**, start the results consumer.
+  ```bash
+  make run-consumer
+  ```
+  You will see the aggregated results from all three Flink jobs as they are produced, clearly marked by window type.
+
+## Architecture
+
+```
+                                                   +-------------------------+
+                               +------------------>|   TumblingWindowJob     +--+
+                               |                   +-------------------------+  |
+                               |                                              |
++---------------+      +----------------+      +-------------------------+  |  v
+| Rust Producer +------>  input_events  +------>|    SlidingWindowJob     +--+-->+ Rust Consumer
++---------------+      +----------------+      +-------------------------+  |  ^ (Logs to console)
+ (Generates      (Kafka Topic, 2 Parts.) |                                  |  |
+  Random Data)                           |                   +-------------------------+  |
+                               +------------------>|    SessionWindowJob     +--+
+                                                   +-------------------------+
 ```
 
-**Note**: If containers were already running when you built, restart them to pick up the JAR:
-```bash
-docker compose restart jobmanager taskmanager
-```
+### Data Flow
+1.  `rust-producer` generates random JSON events and sends them to the `input_events` Kafka topic.
+2.  Each of the three Flink jobs (`Tumbling...`, `Sliding...`, `Session...`) independently reads from `input_events`.
+3.  Each job performs its windowed aggregation and writes a `WindowResult` JSON object to its dedicated output topic (`tumbling_window_out`, `sliding_window_out`, `session_window_out`).
+4.  `rust-consumer` subscribes to all three output topics and prints the results it receives.
 
-### 3. Submit the Flink Job
-This automatically creates topics and submits the job:
-```bash
-make submit-flink
-```
+## Flink Jobs
 
-### 4. Send Test Messages
-```bash
-make send-message    # Send a test message to Kafka
-```
-
-### 5. View Real-Time State Updates
-
-**Option 1: Watch output-topic (Recommended)**
-```bash
-make watch-output    # See JSON state updates in real-time
-```
-
-**Option 2: Kafka UI**
-- Go to [http://localhost:8080](http://localhost:8080)
-- Navigate to Topics → `output-topic` → Messages
-- See JSON like: `{"metric":"TotalMessages","count":5,"timestamp":"2026-02-10T12:00:00Z"}`
-
-**Option 3: Check logs**
-```bash
-make check-count     # Show latest count from Flink logs
-```
+- **TumblingWindowJob**: Aggregates events into fixed, 10-second, non-overlapping windows.
+- **SlidingWindowJob**: Aggregates events into 10-second windows that slide every 5 seconds, producing more frequent updates.
+- **SessionWindowJob**: Groups events into "sessions" based on a 30-second gap of inactivity.
 
 ## Available Commands
 
+The `Makefile` contains a full list of commands for managing the project. Run `make help` to see them all.
 ```bash
-make help            # Show all commands
-make up              # Start/Create Kafka and Flink (background)
-make stop            # Stop containers without removing them
-make start           # Start already created/stopped containers
-make down            # Stop and REMOVE containers and networks
-make build           # Build the project using local Maven
-make build-docker    # Build the project using Maven in Docker
-make init-topics     # Create required Kafka topics
-make send-message    # Send a test message to Kafka via REST API
-make submit-flink    # Submit the Flink job to the cluster
-make cancel-flink    # Cancel all running Flink jobs
-make check-count     # Check the current message count from Flink
-make watch-output    # Watch output-topic for real-time state updates
-make logs            # Show docker logs
+make help
 ```
-
-## Understanding the Data Flow
-
-```
-Producer → input-topic → Flink (Stateful Processing) → output-topic → Consumer
-                            ↓
-                      Flink State
-                   (Running Count)
-                            ↓
-                    Checkpoints
-                   (Every 10s)
-```
-
-### Kafka Concepts
-
-**Partitions**: Topics are split into partitions for parallelism. This demo uses 1 partition per topic.
-
-**Offsets**: Each message gets a sequential offset number (0, 1, 2, ...) within its partition. This is Kafka's way of tracking message position.
-
-**Example**:
-- Message 1 → `input-topic` partition 0, offset 0
-- Message 2 → `input-topic` partition 0, offset 1
-- Message 3 → `input-topic` partition 0, offset 2
-
-### Flink Concepts
-
-**State**: Flink maintains a running count in memory (and checkpoints to disk). Even if Flink restarts, it restores the count from the latest checkpoint.
-
-**Checkpoints**: Automatic snapshots of state every 10 seconds. Enables fault tolerance.
-
-**KeyBy**: Groups messages by key (`"TotalMessages"`) to enable stateful processing.
-
-## Sending Messages
-
-Use `make send-message` or manually via Kafka console producer:
-
-```bash
-echo '{"userId":"user123","action":"click"}' | \
-  docker compose exec -T kafka kafka-console-producer \
-  --bootstrap-server localhost:9092 \
-  --topic input-topic
-```
-
-## What's Included
-
-- **Kafka** (KRaft mode - no Zookeeper)
-- **Flink** (JobManager + TaskManager, 4 slots)
-- **Kafka UI** - http://localhost:8080
-- **Apache Iceberg** - Local Parquet files in `./iceberg-warehouse/`
-- **RocksDB** - State backend
-
-## Memory Management
-
-The environment uses approximately 3.3GB of RAM total:
-- Kafka: 1GB
-- Kafka UI: 768MB
-- Flink JobManager: 1GB
-- Flink TaskManager: 1.5GB
 
 ## Managing the Infrastructure
 
@@ -171,32 +102,17 @@ The environment uses approximately 3.3GB of RAM total:
   ```bash
   make start
   ```
-- **Cleanup (Remove Everything)**: Stops and removes containers/networks.
+- **Cleanup (Remove Everything)**: Stops and removes containers, networks, and Docker volumes (including Kafka data).
   ```bash
   make down
   ```
-
-## Troubleshooting
-
-### JAR file not found when submitting Flink job
-If you see "JAR file does not exist", restart the Flink containers after building:
-```bash
-docker compose restart jobmanager taskmanager
-make submit-flink
-```
-
-### JMX connection errors in Kafka UI
-These are non-critical warnings. Kafka UI can't collect JMX metrics, but all core functionality works fine.
-
-## Dependencies
-
-- Flink 1.17.1 + Kafka connector
-- Apache Iceberg (local Parquet files)
-- RocksDB state backend
-- Jackson JSON
 
 ## Resources
 
 - [Flink Documentation](https://flink.apache.org/)
 - [Kafka Documentation](https://kafka.apache.org/)
 - [Iceberg Documentation](https://iceberg.apache.org/)
+
+## Gemini
+
+[Gemini Info](gemini.md)

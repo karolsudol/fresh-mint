@@ -36,3 +36,5 @@ bin/
 
 # Iceberg warehouse
 iceberg-warehouse/
+
+gemini.md
