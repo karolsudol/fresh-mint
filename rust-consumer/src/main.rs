@@ -2,7 +2,7 @@ use rdkafka::client::ClientContext;
 use rdkafka::config::{ClientConfig, RDKafkaLogLevel};
 use rdkafka::consumer::{CommitMode, Consumer, ConsumerContext, Rebalance, StreamConsumer};
 use rdkafka::error::KafkaResult;
-use rdkafka::message::{Headers, Message};
+use rdkafka::message::Message;
 use serde::Deserialize;
 use chrono::{DateTime, Utc};
 use futures::stream::StreamExt;
@@ -62,9 +62,7 @@ async fn consume(brokers: &str, group_id: &str, topics: &[&str]) {
     println!("Subscribed to topics: {:?}", topics);
     println!("Waiting for results... (Press Ctrl+C to stop)");
 
-    let mut message_stream = consumer.start();
-
-    while let Some(message) = message_stream.next().await {
+    while let Some(message) = consumer.stream().next().await {
         match message {
             Err(e) => eprintln!("Kafka error: {}", e),
             Ok(m) => {
@@ -105,7 +103,7 @@ async fn consume(brokers: &str, group_id: &str, topics: &[&str]) {
 
 #[tokio::main]
 async fn main() {
-    let kafka_bootstrap_servers = std.env::var("BOOTSTRAP_SERVERS").unwrap_or_else(|_| "localhost:9092".to_string());
+    let kafka_bootstrap_servers = std::env::var("BOOTSTRAP_SERVERS").unwrap_or_else(|_| "localhost:9092".to_string());
     let group_id = "rust-consumer-group";
     let topics = ["tumbling_window_out", "sliding_window_out", "session_window_out"];
     
