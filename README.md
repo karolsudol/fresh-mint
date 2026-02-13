@@ -15,7 +15,6 @@ The pipeline consists of:
 
 - Docker and Docker Compose
 - Java 11
-- Maven
 - Rust (install via [rustup.rs](https://rustup.rs/))
 
 ### How to Run the Pipeline
@@ -112,7 +111,3 @@ make help
 - [Flink Documentation](https://flink.apache.org/)
 - [Kafka Documentation](https://kafka.apache.org/)
 - [Iceberg Documentation](https://iceberg.apache.org/)
-
-## Gemini
-
-[Gemini Info](gemini.md)

@@ -38,3 +38,12 @@ bin/
 iceberg-warehouse/
 
 gemini.md
+
+# Build artifacts
+Cargo.lock
+dependency-reduced-pom.xml
+/make
+
+# Specific Rust target directories
+/rust-consumer/target/
+/rust-producer/target/

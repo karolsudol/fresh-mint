@@ -20,8 +20,7 @@ help:
 	@echo "    down            - Stop and REMOVE all containers, networks, and volumes."
 	@echo ""
 	@echo "  Build Artifacts:"
-	@echo "    build           - Build the Flink jobs JAR using local Maven."
-	@echo "    build-docker    - Build the Flink jobs JAR using Maven in a Docker container."
+	@echo "    build           - Build the Flink jobs JAR using Maven in a Docker container."
 	@echo "    build-rust      - Build both Rust applications (producer and consumer)."
 	@echo ""
 	@echo "  Run Applications:"
@@ -63,9 +62,6 @@ down:
 # Build Artifacts
 # ---------------
 build:
-	mvn clean package -DskipTests
-
-build-docker:
 	docker run --rm -v "$$(pwd)":/usr/src/mymaven -w /usr/src/mymaven maven:3.9.9-eclipse-temurin-11 mvn clean package -DskipTests
 
 build-rust:

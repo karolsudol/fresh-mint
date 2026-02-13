@@ -15,7 +15,6 @@ public class WindowResultSerializationSchema implements SerializationSchema<Wind
         try {
             return objectMapper.writeValueAsBytes(element);
         } catch (JsonProcessingException e) {
-            // In a real application, you would want to handle this error more gracefully
             throw new RuntimeException("Failed to serialize WindowResult", e);
         }
     }
