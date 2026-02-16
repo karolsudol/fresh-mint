@@ -1,47 +1,47 @@
 # Makefile for Flink & Kafka Demo
+# =================================
 
+# Variables
+# ---------
 JAR_FILE=target/flink-kafka-demo-1.0-SNAPSHOT.jar
+FLINK_JOB_OPTIONS=--class-detached
 
-.PHONY: up down stop start build build-docker run-producer run-flink-local submit-flink cancel-flink send-message check-count watch-output logs help
-
+# Help
+# ----
+.PHONY: help
 help:
-	@echo "Available commands:"
-	@echo "  up              - Start/Create Kafka and Flink (background)"
-	@echo "  stop            - Stop containers without removing them"
-	@echo "  start           - Start already created/stopped containers"
-	@echo "  down            - Stop and REMOVE containers and networks"
-	@echo "  build           - Build the project using local Maven"
-	@echo "  build-docker    - Build the project using Maven in Docker"
-	@echo "  run-producer    - Run the Kafka producer locally"
-	@echo "  run-flink-local - Run the Flink job locally"
-	@echo "  init-topics     - Create required Kafka topics"
-	@echo "  send-message    - Send a test message to Kafka via native producer"
-	@echo "  submit-flink    - Submit StreamingJob to the cluster"
-	@echo "  submit-windowing - Submit WindowingJob to the cluster"
-	@echo "  cancel-flink    - Cancel all running Flink jobs"
-	@echo "  check-count     - Check the current message count from Flink"
-	@echo "  watch-output    - Watch output-topic for real-time state updates"
-	@echo "  logs            - Show docker logs"
+	@echo "Usage: make <command>"
+	@echo ""
+	@echo "Commands:"
+	@echo "  Infrastructure Management:"
+	@echo "    up              - Start Kafka and Flink cluster in the background."
+	@echo "    stop            - Stop running containers without removing them."
+	@echo "    start           - Resume previously stopped containers."
+	@echo "    down            - Stop and REMOVE all containers, networks, and volumes."
+	@echo ""
+	@echo "  Build Artifacts:"
+	@echo "    build           - Build the Flink jobs JAR using Maven in a Docker container."
+	@echo "    build-rust      - Build both Rust applications (producer and consumer)."
+	@echo ""
+	@echo "  Run Applications:"
+	@echo "    run-producer    - Run the Rust event producer (continuously sends data to Kafka)."
+	@echo "    run-consumer    - Run the Rust window results consumer (logs Flink job output)."
+	@echo ""
+	@echo "  Deploy & Manage Flink Jobs:"
+	@echo "    init-topics     - Create all necessary Kafka topics for the windowing jobs."
+	@echo "    submit-all      - Submit all three windowing Flink jobs to the cluster."
+	@echo "    submit-tumbling - Submit only the Tumbling Window job."
+	@echo "    submit-sliding  - Submit only the Sliding Window job."
+	@echo "    submit-session  - Submit only the Session Window job."
+	@echo "    cancel-all      - Cancel all running Flink jobs."
+	@echo ""
+	@echo "  Monitoring & Debugging:"
+	@echo "    logs            - Tail the logs of all running services."
+	@echo "    logs-flink      - Show only the print output from the Flink jobs."
 
-init-topics:
-	docker compose exec kafka kafka-topics --create --topic input-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists
 
-send-message:
-	@echo "Sending test message to Kafka..."
-	@echo '{"userId":"user123","action":"test","timestamp":"'$$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' | \
-		docker compose exec -T kafka kafka-console-producer \
-		--bootstrap-server localhost:9092 \
-		--topic input-topic
-	@echo "✅ Message sent!"
-
-check-count:
-	@echo "📊 Current message count from Flink:"
-	@docker compose logs taskmanager 2>/dev/null | grep "Analytics Result" | tail -1 || echo "No results yet"
-
-watch-output:
-	@echo "👀 Watching output-topic for state updates (Ctrl+C to stop)..."
-	@docker compose exec kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic output-topic --from-beginning --property print.timestamp=true
-
+# Infrastructure Management
+# -------------------------
 up:
 	docker compose up -d
 	@echo "\n🚀 Services started!"
@@ -55,41 +55,63 @@ stop:
 start:
 	docker compose start
 	@echo "\n✅ Services resumed!"
-	@echo "📊 Flink Dashboard: [http://localhost:8081]"
-	@echo "🔍 Kafka UI:        [http://localhost:8080]"
-	@echo "📡 Kafka Broker:    localhost:9092"
 
 down:
-	docker compose down
+	docker compose down --volumes
 
+# Build Artifacts
+# ---------------
 build:
-	mvn clean package -DskipTests
-
-build-docker:
 	docker run --rm -v "$$(pwd)":/usr/src/mymaven -w /usr/src/mymaven maven:3.9.9-eclipse-temurin-11 mvn clean package -DskipTests
 
+build-rust:
+	@echo "Building Rust producer..."
+	@(cd rust-producer && cargo build --release)
+	@echo "Building Rust consumer..."
+	@(cd rust-consumer && cargo build --release)
+
+# Run Applications
+# ----------------
 run-producer:
-	BOOTSTRAP_SERVERS=localhost:9092 java -cp $(JAR_FILE) org.example.kafka.SimpleProducer
+	@echo "Starting Rust event producer... (Press Ctrl+C to stop)"
+	@(cd rust-producer && cargo run)
 
-run-flink-local:
-	BOOTSTRAP_SERVERS=localhost:9092 java -cp $(JAR_FILE) org.example.flink.StreamingJob
+run-consumer:
+	@echo "Starting Rust window results consumer... (Press Ctrl+C to stop)"
+	@(cd rust-consumer && cargo run)
 
-submit-flink:
-	@echo "📋 Creating Kafka topics if they don't exist..."
-	@docker compose exec kafka kafka-topics --create --topic input-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists 2>/dev/null || true
-	@docker compose exec kafka kafka-topics --create --topic output-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists 2>/dev/null || true
-	@echo "🚀 Submitting StreamingJob..."
-	docker compose exec jobmanager flink run /opt/flink/usrlib/flink-kafka-demo-1.0-SNAPSHOT.jar
+# Deploy & Manage Flink Jobs
+# --------------------------
+KAFKA_TOPICS = input_events tumbling_window_out sliding_window_out session_window_out
+init-topics:
+	@for topic in $(KAFKA_TOPICS); do \
+		echo "Creating topic: $$topic"; \
+		docker compose exec kafka kafka-topics --create --topic $$topic --bootstrap-server localhost:9092 --partitions 2 --replication-factor 1 --if-not-exists; \
+	done
 
-submit-windowing:
-	@echo "📋 Creating Kafka topics if they don't exist..."
-	@docker compose exec kafka kafka-topics --create --topic input-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1 --if-not-exists 2>/dev/null || true
-	@echo "🪟 Submitting WindowingJob..."
-	docker compose exec jobmanager flink run --class org.example.flink.WindowingJob /opt/flink/usrlib/flink-kafka-demo-1.0-SNAPSHOT.jar
+submit-all: submit-tumbling submit-sliding submit-session
 
-cancel-flink:
+submit-tumbling: init-topics build
+	@echo "🚀 Submitting TumblingWindowJob..."
+	docker compose exec jobmanager flink run $(FLINK_JOB_OPTIONS) --class org.example.flink.TumblingWindowJob /opt/flink/usrlib/$(JAR_FILE)
+
+submit-sliding: init-topics build
+	@echo "🚀 Submitting SlidingWindowJob..."
+	docker compose exec jobmanager flink run $(FLINK_JOB_OPTIONS) --class org.example.flink.SlidingWindowJob /opt/flink/usrlib/$(JAR_FILE)
+
+submit-session: init-topics build
+	@echo "🚀 Submitting SessionWindowJob..."
+	docker compose exec jobmanager flink run $(FLINK_JOB_OPTIONS) --class org.example.flink.SessionWindowJob /opt/flink/usrlib/$(JAR_FILE)
+
+cancel-all:
 	@echo "🛑 Cancelling all running Flink jobs..."
-	@docker compose exec jobmanager flink list 2>/dev/null | grep RUNNING | awk '{print $$4}' | xargs -r -I {} docker compose exec jobmanager flink cancel {} || echo "No running jobs to cancel"
+	@docker compose exec -T jobmanager flink list -r 2>/dev/null | grep 'RUNNING' | awk '{print $$4}' | xargs -r -I {} docker compose exec -T jobmanager flink cancel {} || echo "No running jobs to cancel."
 
+# Monitoring & Debugging
+# ----------------------
 logs:
 	docker compose logs -f
+
+logs-flink:
+	@echo "📊 Watching Flink job results (Ctrl+C to stop)..."
+	@docker compose logs -f taskmanager | grep --line-buffered -E "Window Result"
