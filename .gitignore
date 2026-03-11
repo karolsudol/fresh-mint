@@ -47,3 +47,11 @@ dependency-reduced-pom.xml
 # Specific Rust target directories
 /rust-consumer/target/
 /rust-producer/target/
+
+# Python / Beam
+beam/.venv/
+beam/.python-version
+**/__pycache__/
+*.py[cod]
+*$py.class
+beam/output.txt*

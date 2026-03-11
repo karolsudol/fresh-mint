@@ -84,6 +84,16 @@ Open two separate terminal windows for this step.
 - **SlidingWindowJob**: Aggregates events into 10-second windows that slide every 5 seconds, producing more frequent updates.
 - **SessionWindowJob**: Groups events into "sessions" based on a 30-second gap of inactivity.
 
+## Apache Beam Python SDK
+
+Located in `beam/`, this project uses **Apache Beam 2.71.0** with the Python SDK. It is ideal for ML/AI-driven pipelines and rapid prototyping.
+
+- **Full-Featured:** Python is the most popular SDK for ML (TensorFlow, PyTorch) and supports **Beam YAML**.
+- **Runners:** Can be run locally using `DirectRunner` or on the Flink cluster using `FlinkRunner` (via the Portability Framework).
+- **Setup:** Managed by `uv` for fast dependency resolution and virtual environments.
+
+See [beam/README.md](./beam/README.md) for detailed setup and execution instructions.
+
 ## Available Commands
 
 The `Makefile` contains a full list of commands for managing the project. Run `make help` to see them all.
