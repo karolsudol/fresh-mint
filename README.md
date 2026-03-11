@@ -4,12 +4,14 @@ Hands-on demo for learning Apache Flink and Apache Kafka streaming concepts thro
 
 ## End-to-End Windowing Demo
 
-This project demonstrates an end-to-end streaming pipeline that uses multiple Flink jobs to perform different types of windowed aggregations on a stream of events.
+This project demonstrates an end-to-end streaming pipeline that uses multiple Flink and Beam jobs to perform different types of windowed aggregations on a stream of events.
 
-The pipeline consists of:
-- A **Rust-based producer** that generates events and sends them to Kafka.
-- **Three Flink jobs** (Tumbling, Sliding, and Session windows) that consume the events, perform aggregations, and write results back to Kafka.
-- A **Rust-based consumer** that reads the final results from all jobs and prints them to the console.
+### Project Structure
+
+- **`flink-java/`**: Core Flink jobs (Tumbling, Sliding, and Session windows) written in Java 11.
+- **`beam-python/`**: Apache Beam Python SDK (v2.71.0) job, ideal for ML/AI workflows.
+- **`rust-producer/`**: A high-performance Rust-based producer that generates events and sends them to Kafka.
+- **`rust-consumer/`**: A Rust-based consumer that reads the final results from all jobs and prints them to the console.
 
 ### Prerequisites
 
@@ -86,13 +88,32 @@ Open two separate terminal windows for this step.
 
 ## Apache Beam Python SDK
 
-Located in `beam/`, this project uses **Apache Beam 2.71.0** with the Python SDK. It is ideal for ML/AI-driven pipelines and rapid prototyping.
+Located in `beam-python/`, this project uses **Apache Beam 2.71.0** with the Python SDK. It is ideal for ML/AI-driven pipelines and rapid prototyping.
 
-- **Full-Featured:** Python is the most popular SDK for ML (TensorFlow, PyTorch) and supports **Beam YAML**.
-- **Runners:** Can be run locally using `DirectRunner` or on the Flink cluster using `FlinkRunner` (via the Portability Framework).
-- **Setup:** Managed by `uv` for fast dependency resolution and virtual environments.
+### Why Python over Go or Java?
+- **Python:** Best for ML/AI integration, rapid development, and supports the newer **Beam YAML** definitions. It uses the **Portability Framework** to access Java-based I/O connectors.
+- **Java:** The reference implementation. Highest performance and lowest latency. Use this if you need custom I/O or absolute performance.
+- **Go:** Stable but fewer features. Good if your team is already invested in the Go ecosystem and needs compiled binaries for worker nodes.
 
-See [beam/README.md](./beam/README.md) for detailed setup and execution instructions.
+### Running the Beam Job
+
+**1. Locally (DirectRunner)**
+```bash
+cd beam-python
+uv run python beam_job.py --output output.txt
+```
+
+**2. On Flink (FlinkRunner)**
+Submit the job (using the **LOOPBACK** environment for local development):
+```bash
+cd beam-python
+uv run python beam_job.py \
+    --runner FlinkRunner \
+    --flink_master localhost:8081 \
+    --environment_type LOOPBACK \
+    --output output.txt
+```
+*Note: For production, you would typically use a Docker container for the environment (`--environment_type DOCKER`).*
 
 ## Available Commands
 

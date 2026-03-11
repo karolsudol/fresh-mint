@@ -3,7 +3,8 @@
 
 # Variables
 # ---------
-JAR_FILE=target/flink-kafka-demo-1.0-SNAPSHOT.jar
+# JAR_FILE is located in flink-java/target relative to the root
+JAR_FILE=flink-java/target/flink-kafka-demo-1.0-SNAPSHOT.jar
 FLINK_JOB_OPTIONS=--class-detached
 
 # Help
@@ -26,6 +27,7 @@ help:
 	@echo "  Run Applications:"
 	@echo "    run-producer    - Run the Rust event producer (continuously sends data to Kafka)."
 	@echo "    run-consumer    - Run the Rust window results consumer (logs Flink job output)."
+	@echo "    run-beam        - Run the Python Beam WordCount job locally."
 	@echo ""
 	@echo "  Deploy & Manage Flink Jobs:"
 	@echo "    init-topics     - Create all necessary Kafka topics for the windowing jobs."
@@ -62,7 +64,8 @@ down:
 # Build Artifacts
 # ---------------
 build:
-	docker run --rm -v "$$(pwd)":/usr/src/mymaven -w /usr/src/mymaven maven:3.9.9-eclipse-temurin-11 mvn clean package -DskipTests
+	@echo "Building Flink Java JAR..."
+	docker run --rm -v "$$(pwd)/flink-java":/usr/src/mymaven -w /usr/src/mymaven maven:3.9.9-eclipse-temurin-11 mvn clean package -DskipTests
 
 build-rust:
 	@echo "Building Rust producer..."
@@ -79,6 +82,10 @@ run-producer:
 run-consumer:
 	@echo "Starting Rust window results consumer... (Press Ctrl+C to stop)"
 	@(cd rust-consumer && cargo run)
+
+run-beam:
+	@echo "Starting Python Beam job locally..."
+	@(cd beam-python && uv run python beam_job.py --output output.txt)
 
 # Deploy & Manage Flink Jobs
 # --------------------------

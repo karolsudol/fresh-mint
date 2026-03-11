@@ -38,7 +38,7 @@ services:
       - "8081:8081"
     command: jobmanager
     volumes:
-      - ./target:/opt/flink/usrlib
+      - .:/opt/flink/usrlib
     environment:
       - |
         FLINK_PROPERTIES=
@@ -53,7 +53,7 @@ services:
       - jobmanager
     command: taskmanager
     volumes:
-      - ./target:/opt/flink/usrlib
+      - .:/opt/flink/usrlib
     environment:
       - |
         FLINK_PROPERTIES=

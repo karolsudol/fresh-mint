@@ -18,7 +18,8 @@
 *.zip
 *.tar.gz
 *.rar
-target/*
+flink-java/target/
+**/target/
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
@@ -49,9 +50,9 @@ dependency-reduced-pom.xml
 /rust-producer/target/
 
 # Python / Beam
-beam/.venv/
-beam/.python-version
+beam-python/.venv/
+beam-python/.python-version
 **/__pycache__/
 *.py[cod]
 *$py.class
-beam/output.txt*
+beam-python/output.txt*
