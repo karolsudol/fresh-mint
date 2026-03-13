@@ -62,4 +62,5 @@ class FormatWindowResult(beam.DoFn):
             windowEnd=window_end,
             windowType=self.window_type,
         )
-        yield result.to_json().encode("utf-8")
+        # Yield as (key, value) tuple for WriteToKafka
+        yield (key.encode("utf-8"), result.to_json().encode("utf-8"))

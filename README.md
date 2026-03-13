@@ -25,6 +25,7 @@ This project demonstrates an end-to-end streaming pipeline that uses multiple Fl
 This will bring up Kafka, the Flink cluster, and Kafka UI using Docker Compose.
 ```bash
 make up
+make init-topics
 ```
 You can monitor the services at:
 - **Flink Dashboard**: [http://localhost:8081](http://localhost:8081)

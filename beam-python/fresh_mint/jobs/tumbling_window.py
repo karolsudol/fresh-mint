@@ -1,5 +1,6 @@
 import argparse
 import logging
+import typing
 
 import apache_beam as beam
 from apache_beam.io.kafka import ReadFromKafka, WriteToKafka
@@ -12,7 +13,7 @@ from fresh_mint.transforms import AssignTimestamps, FormatWindowResult, ParseEve
 def run_tumbling_window(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--bootstrap_servers", default="kafka:29092", help="Kafka bootstrap servers"
+        "--bootstrap_servers", default="localhost:9092", help="Kafka bootstrap servers"
     )
     parser.add_argument(
         "--input_topic", default="input_events", help="Kafka topic to read from"
@@ -30,26 +31,34 @@ def run_tumbling_window(argv=None):
     pipeline_options.view_as(SetupOptions).save_main_session = True
 
     with beam.Pipeline(options=pipeline_options) as p:
-        (
-            p
-            | "ReadFromKafka"
-            >> ReadFromKafka(
-                consumer_config={"bootstrap.servers": known_args.bootstrap_servers},
-                topics=[known_args.input_topic],
-                max_num_records=None,
-            )
+        # Define the pipeline steps
+        input_data = p | "ReadFromKafka" >> ReadFromKafka(
+            consumer_config={"bootstrap.servers": known_args.bootstrap_servers},
+            topics=[known_args.input_topic],
+            max_num_records=None,
+        )
+
+        parsed_events = (
+            input_data
+            | "ExtractValues" >> beam.Map(lambda kv: kv[1])
             | "ParseJSON" >> beam.ParDo(ParseEvent())
             | "AssignTimestamps" >> beam.ParDo(AssignTimestamps())
+        )
+
+        windowed_counts = (
+            parsed_events
             | "TumblingWindow" >> beam.WindowInto(FixedWindows(10))
             | "KeyById" >> beam.Map(lambda event: (event.id, event.value))
             | "SumValues" >> beam.CombinePerKey(sum)
-            | "FormatResult"
-            >> beam.ParDo(FormatWindowResult(window_type="Beam-Tumbling"))
-            | "WriteToKafka"
-            >> WriteToKafka(
-                producer_config={"bootstrap.servers": known_args.bootstrap_servers},
-                topic=known_args.output_topic,
-            )
+        )
+
+        formatted_results = windowed_counts | "FormatResult" >> beam.ParDo(
+            FormatWindowResult(window_type="Beam-Tumbling")
+        ).with_output_types(typing.Tuple[bytes, bytes])
+
+        formatted_results | "WriteToKafka" >> WriteToKafka(
+            producer_config={"bootstrap.servers": known_args.bootstrap_servers},
+            topic=known_args.output_topic,
         )
 
 

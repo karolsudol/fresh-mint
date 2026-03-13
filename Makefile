@@ -91,7 +91,7 @@ run-beam-example:
 
 run-beam-tumbling:
 	@echo "Starting Python Beam Tumbling Window job locally..."
-	@(cd beam-python && uv run fresh-mint tumbling_window)
+	@(cd beam-python && uv run fresh-mint tumbling_window --bootstrap_servers localhost:9092)
 
 run-beam: run-beam-tumbling
 
@@ -100,7 +100,8 @@ submit-beam: init-topics
 	@(cd beam-python && uv run fresh-mint tumbling_window \
 		--runner FlinkRunner \
 		--flink_master localhost:8081 \
-		--environment_type LOOPBACK)
+		--environment_type LOOPBACK \
+		--bootstrap_servers localhost:9092)
 
 # Deploy & Manage Flink Jobs
 # --------------------------
