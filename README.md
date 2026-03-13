@@ -99,19 +99,13 @@ Located in `beam-python/`, this project uses **Apache Beam 2.71.0** with the Pyt
 
 **1. Locally (DirectRunner)**
 ```bash
-cd beam-python
-uv run python beam_job.py --output output.txt
+make run-beam
 ```
 
 **2. On Flink (FlinkRunner)**
 Submit the job (using the **LOOPBACK** environment for local development):
 ```bash
-cd beam-python
-uv run python beam_job.py \
-    --runner FlinkRunner \
-    --flink_master localhost:8081 \
-    --environment_type LOOPBACK \
-    --output output.txt
+make submit-beam
 ```
 *Note: For production, you would typically use a Docker container for the environment (`--environment_type DOCKER`).*
 
@@ -141,4 +135,5 @@ make help
 
 - [Flink Documentation](https://flink.apache.org/)
 - [Kafka Documentation](https://kafka.apache.org/)
+- [Beam Documentation](https://beam.apache.org/)
 - [Iceberg Documentation](https://iceberg.apache.org/)

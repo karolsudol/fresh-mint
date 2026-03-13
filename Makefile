@@ -27,7 +27,8 @@ help:
 	@echo "  Run Applications:"
 	@echo "    run-producer    - Run the Rust event producer (continuously sends data to Kafka)."
 	@echo "    run-consumer    - Run the Rust window results consumer (logs Flink job output)."
-	@echo "    run-beam        - Run the Python Beam WordCount job locally."
+	@echo "    run-beam        - Run the Python Beam job locally (DirectRunner)."
+	@echo "    submit-beam     - Submit the Python Beam job to the Flink cluster (FlinkRunner)."
 	@echo ""
 	@echo "  Deploy & Manage Flink Jobs:"
 	@echo "    init-topics     - Create all necessary Kafka topics for the windowing jobs."
@@ -86,6 +87,14 @@ run-consumer:
 run-beam:
 	@echo "Starting Python Beam job locally..."
 	@(cd beam-python && uv run python beam_job.py --output output.txt)
+
+submit-beam:
+	@echo "Submitting Python Beam job to Flink cluster..."
+	@(cd beam-python && uv run python beam_job.py \
+		--runner FlinkRunner \
+		--flink_master localhost:8081 \
+		--environment_type LOOPBACK \
+		--output output.txt)
 
 # Deploy & Manage Flink Jobs
 # --------------------------
