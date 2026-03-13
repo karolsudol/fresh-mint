@@ -85,20 +85,19 @@ run-consumer:
 	@(cd rust-consumer && cargo run)
 
 run-beam:
-	@echo "Starting Python Beam job locally..."
-	@(cd beam-python && uv run python beam_job.py --output output.txt)
+	@echo "Starting Python Beam Tumbling Window job locally..."
+	@(cd beam-python && uv run fresh-mint tumbling_window)
 
-submit-beam:
-	@echo "Submitting Python Beam job to Flink cluster..."
-	@(cd beam-python && uv run python beam_job.py \
+submit-beam: init-topics
+	@echo "Submitting Python Beam Tumbling Window job to Flink cluster..."
+	@(cd beam-python && uv run fresh-mint tumbling_window \
 		--runner FlinkRunner \
 		--flink_master localhost:8081 \
-		--environment_type LOOPBACK \
-		--output output.txt)
+		--environment_type LOOPBACK)
 
 # Deploy & Manage Flink Jobs
 # --------------------------
-KAFKA_TOPICS = input_events tumbling_window_out sliding_window_out session_window_out
+KAFKA_TOPICS = input_events tumbling_window_out sliding_window_out session_window_out beam_tumbling_window_out
 init-topics:
 	@for topic in $(KAFKA_TOPICS); do \
 		echo "Creating topic: $$topic"; \

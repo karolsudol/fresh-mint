@@ -1,15 +1,24 @@
 [project]
-name = "beam"
+name = "fresh-mint-beam"
 version = "0.1.0"
 description = "Apache Beam Python project for Flink"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "apache-beam>=2.71.0",
+    "apache-beam[gcp]>=2.71.0",
+    "crcmod",
+    "python-snappy",
 ]
 
 [project.scripts]
-run-job = "beam_job:run"
+fresh-mint = "fresh_mint.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["fresh_mint"]
 
 [tool.uv]
 prerelease = "allow"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

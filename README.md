@@ -88,12 +88,10 @@ Open two separate terminal windows for this step.
 
 ## Apache Beam Python SDK
 
-Located in `beam-python/`, this project uses **Apache Beam 2.71.0** with the Python SDK. It is ideal for ML/AI-driven pipelines and rapid prototyping.
-
-### Why Python over Go or Java?
-- **Python:** Best for ML/AI integration, rapid development, and supports the newer **Beam YAML** definitions. It uses the **Portability Framework** to access Java-based I/O connectors.
-- **Java:** The reference implementation. Highest performance and lowest latency. Use this if you need custom I/O or absolute performance.
-- **Go:** Stable but fewer features. Good if your team is already invested in the Go ecosystem and needs compiled binaries for worker nodes.
+Located in `beam-python/`, this project uses **Apache Beam 2.71.0** with the Python SDK. It is organized into a modular structure to support multiple streaming jobs:
+- **`fresh_mint/models.py`**: Shared data classes (`Event`, `WindowResult`).
+- **`fresh_mint/transforms.py`**: Common PTransforms for parsing and windowing.
+- **`fresh_mint/jobs/`**: Specific job implementations (e.g., `tumbling_window.py`).
 
 ### Running the Beam Job
 
