@@ -93,15 +93,22 @@ Located in `beam-python/`, this project uses **Apache Beam 2.71.0** with the Pyt
 - **`fresh_mint/transforms.py`**: Common PTransforms for parsing and windowing.
 - **`fresh_mint/jobs/`**: Specific job implementations (e.g., `tumbling_window.py`).
 
-### Running the Beam Job
+### Running the Beam Jobs
 
-**1. Locally (DirectRunner)**
+**1. WordCount Example (DirectRunner)**
+Run a simple batch job that counts words in `sample.txt`, writes to `output.txt`, and prints top statistics to the console.
 ```bash
-make run-beam
+make run-beam-example
 ```
 
-**2. On Flink (FlinkRunner)**
-Submit the job (using the **LOOPBACK** environment for local development):
+**2. Tumbling Window Job (DirectRunner)**
+Run the streaming window job locally, reading from and writing to Kafka.
+```bash
+make run-beam-tumbling
+```
+
+**3. Tumbling Window Job (FlinkRunner)**
+Submit the streaming job to the Flink cluster (using the **LOOPBACK** environment).
 ```bash
 make submit-beam
 ```
