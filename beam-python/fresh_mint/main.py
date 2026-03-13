@@ -2,11 +2,15 @@ import logging
 import sys
 
 from fresh_mint.jobs.tumbling_window import run_tumbling_window
+from fresh_mint.jobs.wordcount_example import run_wordcount_example
 
 
 def main():
     if len(sys.argv) < 2:
         print("Usage: fresh-mint <job_name> [args]")
+        print("Available jobs:")
+        print("  - tumbling_window")
+        print("  - wordcount_example")
         sys.exit(1)
 
     job_name = sys.argv[1]
@@ -14,6 +18,8 @@ def main():
 
     if job_name == "tumbling_window":
         run_tumbling_window(job_args)
+    elif job_name == "wordcount_example":
+        run_wordcount_example(job_args)
     else:
         print(f"Unknown job: {job_name}")
         sys.exit(1)
