@@ -32,23 +32,23 @@ services:
 
   # Flink JobManager
   jobmanager:
-    image: flink:1.18.1-java11
+    image: flink:1.20-java11
     container_name: flink-jobmanager
-    ports:
-      - "8081:8081"
+    network_mode: host
     command: jobmanager
     volumes:
       - .:/opt/flink/usrlib
     environment:
       - |
         FLINK_PROPERTIES=
-        jobmanager.rpc.address: jobmanager
+        jobmanager.rpc.address: localhost
     mem_limit: 1g
 
   # Flink TaskManager
   taskmanager:
-    image: flink:1.18.1-java11
+    image: flink:1.20-java11
     container_name: flink-taskmanager
+    network_mode: host
     depends_on:
       - jobmanager
     command: taskmanager
@@ -57,7 +57,7 @@ services:
     environment:
       - |
         FLINK_PROPERTIES=
-        jobmanager.rpc.address: jobmanager
+        jobmanager.rpc.address: localhost
         taskmanager.numberOfTaskSlots: 4
     mem_limit: 1.5g
 

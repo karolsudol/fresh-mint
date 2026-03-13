@@ -25,8 +25,8 @@ def run_tumbling_window(argv=None):
     )
 
     known_args, pipeline_args = parser.parse_known_args(argv)
-
     pipeline_options = PipelineOptions(pipeline_args)
+
     # We use save_main_session so that worker nodes can access global imports.
     pipeline_options.view_as(SetupOptions).save_main_session = True
 
@@ -42,6 +42,8 @@ def run_tumbling_window(argv=None):
             input_data
             | "ExtractValues" >> beam.Map(lambda kv: kv[1])
             | "ParseJSON" >> beam.ParDo(ParseEvent())
+            | "LogEvent"
+            >> beam.Map(lambda e: logging.info(f"✨ Processed event: {e.id}") or e)
             | "AssignTimestamps" >> beam.ParDo(AssignTimestamps())
         )
 
