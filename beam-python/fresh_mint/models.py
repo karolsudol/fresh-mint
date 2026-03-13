@@ -1,6 +1,6 @@
 import json
-from dataclasses import dataclass, asdict
-from datetime import datetime
+from dataclasses import asdict, dataclass
+
 
 @dataclass
 class Event:
@@ -19,12 +19,13 @@ class Event:
     def to_json(self):
         return json.dumps(self.to_dict())
 
+
 @dataclass
 class WindowResult:
     key: str
     value: float
     windowStart: str  # ISO-8601 string
-    windowEnd: str    # ISO-8601 string
+    windowEnd: str  # ISO-8601 string
     windowType: str
 
     def to_dict(self):

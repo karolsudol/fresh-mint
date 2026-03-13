@@ -18,6 +18,11 @@ packages = ["fresh_mint"]
 
 [tool.uv]
 prerelease = "allow"
+dev-dependencies = [
+    "pre-commit",
+    "ruff",
+    "pyright",
+]
 
 [build-system]
 requires = ["hatchling"]
