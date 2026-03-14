@@ -64,7 +64,7 @@ services:
     container_name: beam-job-server
     network_mode: host
     environment:
-      - BEAM_JAVA_OPTS=-Xmx1g -XX:MaxDirectMemorySize=1g
+      - BEAM_JAVA_OPTS=-Xmx1g -XX:MaxDirectMemorySize=1g -Dbeam.flink.default_environment_type=EXTERNAL -Dbeam.flink.default_environment_config=localhost:50000 -Ddefault_environment_type=EXTERNAL -Ddefault_environment_config=localhost:50000
     command: >
       --flink-master-url=localhost:8081
       --job-port=8099

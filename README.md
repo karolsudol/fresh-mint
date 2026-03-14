@@ -84,34 +84,40 @@ Open two separate terminal windows for this step.
 
 ## Architecture
 
+```text
+                                     +-------------------------------------------------+
+                                     |             Flink Cluster (Processing)          |
++----------------+      +--------+   |   +-------------------------+      +--------+   |   +----------------+
+|                |      |        |------>| Java: TumblingWindowJob |----->|        |   |   |                |
+| Rust Producer  |----->| Kafka  |   |   +-------------------------+      | Kafka  |------>| Rust Consumer  |
+| (Events)       |      | Topic  |------>| Java: SlidingWindowJob  |----->| Output |   |   | (Results)      |
+|                |      | (Input)|   |   +-------------------------+      | Topics |   |   |                |
++----------------+      +--------+------>| Java: SessionWindowJob  |----->| (Out)  |   |   +----------------+
+                               |     |   +-------------------------+      +---^----+   |
+                               |     |                                        |        |
+                               |     |   +-------------------------+          |        |
+                               |     |   |    Beam Job Server      |          |        |
+                               |     |   |      (Translator)       |          |        |
+                               |     |   +-----------+-------------+          |        |
+                               |     |               |                        |        |
+                               |     |   +-----------v-------------+          |        |
+                               +-------->|  Beam: Tumbling Window  |----------+        |
+                                     |   |     (Python Logic)      |                   |
+                                     |   +-----------+-------------+                   |
+                                     |               | (gRPC)                          |
+                                     |   +-----------v-------------+                   |
+                                     |   |    Beam Worker Pool     |                   |
+                                     |   |    (Python Runtime)     |                   |
+                                     |   +-------------------------+                   |
+                                     +-------------------------------------------------+
 ```
-                                                   +-------------------------+
-                               +------------------>|   TumblingWindowJob     +--+
-                               |                   +-------------------------+  |
-                               |                                              |
-+---------------+      +----------------+      +-------------------------+  |  v
-| Rust Producer +------>  input-events  +------>|    SlidingWindowJob     +--+-->+ Rust Consumer
-+---------------+      +----------------+      +-------------------------+  |  ^ (Logs to console)
- (Generates      (Kafka Topic, 2 Parts.) |                                  |  |
-  Random Data)                           |                   +-------------------------+  |
-                               +------------------>|    SessionWindowJob     +--+
-                                                   +-------------------------+
-                               |
-                               |                   +-------------------------+
-                               |                   |   Beam Job Server       |
-                               |                   |    (Translator)         |
-                               |                   +-----------+-------------+
-                               |                               |
-                               |                   +-----------v-------------+
-                               +------------------>|  beam-tumbling-window   |
-                                                   |    (Python / Beam)      |
-                                                   +-----------+-------------+
-                                                               | (gRPC)
-                                                   +-----------v-------------+
-                                                   |   beam-worker-pool      |
-                                                   |    (Python Runtime)     |
-                                                   +-------------------------+
-```
+
+### Simplified Data Flow
+1.  **Ingest**: `rust-producer` sends JSON events to Kafka.
+2.  **Process (Java)**: Three Java Flink jobs perform windowed aggregations.
+3.  **Process (Python)**: The Beam job runs via the **Job Server** (Translation) and **Worker Pool** (Runtime).
+4.  **Export**: All jobs write results back to dedicated Kafka output topics.
+5.  **Observe**: `rust-consumer` streams all results to your console.
 
 ### Data Flow
 1.  `rust-producer` generates random JSON events and sends them to the `input-events` Kafka topic.

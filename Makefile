@@ -1,175 +1,131 @@
-# Makefile for Flink & Kafka Demo
-# =================================
+# Makefile for Fresh Mint (Flink & Kafka)
+# =====================================
 
-# Variables
-# ---------
-# JAR_FILE is located in flink-java/target relative to the root
 JAR_FILE=flink-java/target/flink-kafka-demo-1.0-SNAPSHOT.jar
 FLINK_JOB_OPTIONS=--detached
 
-# Help
-# ----
 .PHONY: help
 help:
 	@echo "Usage: make <command>"
 	@echo ""
-	@echo "Commands:"
-	@echo "  Infrastructure Management:"
-	@echo "    up              - Start Kafka and Flink cluster in the background."
-	@echo "    stop            - Stop running containers without removing them."
-	@echo "    start           - Resume previously stopped containers."
-	@echo "    down            - Stop and REMOVE all containers, networks, and volumes."
+	@echo "Infrastructure Management:"
+	@echo "  up                   - Start all services (Kafka, Flink, Job Server, Worker Pool)"
+	@echo "  down                 - Stop and remove all containers and volumes"
+	@echo "  stop                 - Stop containers without removing them"
+	@echo "  start                - Resume stopped containers"
 	@echo ""
-	@echo "  Build Artifacts:"
-	@echo "    build           - Build the Flink jobs JAR using Maven in a Docker container."
-	@echo "    build-rust      - Build both Rust applications (producer and consumer)."
+	@echo "Build Artifacts:"
+	@echo "  build                - Build Flink Java JAR"
+	@echo "  build-rust           - Build Rust producer and consumer"
 	@echo ""
-	@echo "  Run Applications:"
-	@echo "    run-producer    - Run the Rust event producer (continuously sends data to Kafka)."
-	@echo "    run-consumer    - Run the Rust window results consumer (logs Flink job output)."
-	@echo "    run-beam-wordcount - Run the Python Beam wordcount example locally."
-	@echo "    run-beam-flink-example - Run a simple Beam-to-Flink bridge test (Verify environment)."
-	@echo "    run-beam-tumbling - Run the Python Beam Tumbling Window job locally (DirectRunner)."
-	@echo "    submit-beam-tumbling - Submit the Python Beam Tumbling Window job to Flink cluster."
+	@echo "Run Beam Examples (Local/Direct):"
+	@echo "  run-beam-wordcount   - Run WordCount example"
 	@echo ""
-	@echo "  Deploy & Manage Flink Jobs:"
-	@echo "    init-topics     - Create all necessary Kafka topics for the windowing jobs."
-	@echo "    submit-flink-all - Submit all three windowing Flink jobs to the cluster."
-	@echo "    submit-flink-tumbling - Submit only the Flink Tumbling Window job."
-	@echo "    submit-flink-sliding  - Submit only the Flink Sliding Window job."
-	@echo "    submit-flink-session  - Submit only the Flink Session Window job."
-	@echo "    cancel-all      - Cancel all running Flink jobs."
+	@echo "Run Beam Jobs on Flink (Portable):"
+	@echo "  run-beam-flink-example       - Run basic bridge test (beam-flink-example)"
+	@echo "  run-beam-flink-kafka-example - Run Kafka bridge test (beam-flink-kafka-example)"
+	@echo "  submit-beam-tumbling         - Submit main window job (beam-tumbling-window)"
 	@echo ""
-	@echo "  Monitoring & Debugging:"
-	@echo "    logs            - Tail the logs of all running services."
-	@echo "    logs-flink      - Show only the print output from the Flink jobs."
+	@echo "Deploy & Manage Flink Jobs (Java):"
+	@echo "  init-topics          - Create Kafka topics"
+	@echo "  submit-flink-all     - Submit all Java window jobs"
+	@echo "  submit-flink-tumbling - Submit Java Tumbling Window"
+	@echo "  submit-flink-sliding  - Submit Java Sliding Window"
+	@echo "  submit-flink-session  - Submit Java Session Window"
+	@echo "  cancel-all           - Cancel all Flink jobs"
+	@echo ""
+	@echo "Applications & Debugging:"
+	@echo "  run-producer         - Run Rust event producer"
+	@echo "  run-consumer         - Run Rust result consumer"
+	@echo "  logs-flink           - Watch Flink job results"
 
-
-# Infrastructure Management
-# -------------------------
+# Infrastructure
 .PHONY: .env
 .env: config.yaml
 	@echo "Generating .env from config.yaml..."
 	@echo "BOOTSTRAP_SERVERS=$(shell yq '.kafka.bootstrap_servers' config.yaml)" > .env
-	@echo "INPUT_TOPIC=$(INPUT_TOPIC)" >> .env
-	@echo "TUMBLING_OUT=$(TUMBLING_OUT)" >> .env
-	@echo "SLIDING_OUT=$(SLIDING_OUT)" >> .env
-	@echo "SESSION_OUT=$(SESSION_OUT)" >> .env
-	@echo "BEAM_OUT=$(BEAM_OUT)" >> .env
+	@echo "INPUT_TOPIC=$(shell yq '.kafka.topics.input_events' config.yaml)" >> .env
+	@echo "TUMBLING_OUT=$(shell yq '.kafka.topics.tumbling_window_out' config.yaml)" >> .env
+	@echo "SLIDING_OUT=$(shell yq '.kafka.topics.sliding_window_out' config.yaml)" >> .env
+	@echo "SESSION_OUT=$(shell yq '.kafka.topics.session_window_out' config.yaml)" >> .env
+	@echo "BEAM_OUT=$(shell yq '.kafka.topics.beam_tumbling_window_out' config.yaml)" >> .env
 
 up: .env
 	docker compose up -d
-	@echo "\n🚀 Services started!"
-	@echo "📊 Flink Dashboard: [http://localhost:8081]"
-	@echo "🔍 Kafka UI:        [http://localhost:8080]"
-	@echo "📡 Kafka Broker:    localhost:9092"
+	@echo "\n🚀 Services started! Flink: http://localhost:8081 | Kafka UI: http://localhost:8080"
+
+down:
+	docker compose down --volumes
 
 stop:
 	docker compose stop
 
 start:
 	docker compose start
-	@echo "\n✅ Services resumed!"
 
-down:
-	docker compose down --volumes
-
-# Build Artifacts
-# ---------------
+# Build
 build:
-	@echo "Building Flink Java JAR..."
-	docker run --rm \
-		-v "$$(pwd)/flink-java":/usr/src/mymaven \
-		-v "$$(pwd)/.m2":/root/.m2 \
-		-w /usr/src/mymaven \
-		maven:3.9.9-eclipse-temurin-11 mvn clean package -DskipTests
+	docker run --rm -v "$$(pwd)/flink-java":/usr/src/mymaven -v "$$(pwd)/.m2":/root/.m2 -w /usr/src/mymaven maven:3.9.9-eclipse-temurin-11 mvn clean package -DskipTests
 
 build-rust:
-	@echo "Building Rust producer..."
 	@(cd rust-producer && cargo build --release)
-	@echo "Building Rust consumer..."
 	@(cd rust-consumer && cargo build --release)
 
 # Run Applications
-# ----------------
 run-producer:
-	@echo "Starting Rust event producer... (Press Ctrl+C to stop)"
 	@(cd rust-producer && cargo run)
 
 run-consumer:
-	@echo "Starting Rust window results consumer... (Press Ctrl+C to stop)"
 	@(cd rust-consumer && cargo run)
 
-run-beam-flink-example:
-	@echo "Starting Python Beam Flink Example (Bridge test)..."
-	@(cd beam-python && uv run fresh-mint flink_example)
-
-run-beam-kafka-test: init-topics
-	@echo "Starting Python Beam Kafka Test (Reading raw events)..."
-	@(cd beam-python && uv run fresh-mint kafka_test \
-		--runner PortableRunner \
-		--job_endpoint localhost:8099 \
-		--environment_type LOOPBACK \
-		--streaming \
-		--job_name beam-kafka-test)
-
+# Beam Jobs
 run-beam-wordcount:
-	@echo "Starting Python Beam WordCount example..."
 	@(cd beam-python && uv run fresh-mint wordcount_example)
 
-run-beam-tumbling:
-	@echo "Starting Python Beam Tumbling Window job locally..."
-	@(cd beam-python && uv run fresh-mint tumbling_window \
-		--bootstrap_servers localhost:9092 \
-		--expansion_service localhost:8097 \
-		--environment_type LOOPBACK)
-
-submit-beam-tumbling: init-topics
-	@echo "🚀 Submitting Python Beam Tumbling Window job via Job Server (LOOPBACK)..."
-	@(cd beam-python && uv run fresh-mint tumbling_window \
+run-beam-flink-example:
+	@(cd beam-python && uv run fresh-mint flink_example \
 		--runner PortableRunner \
 		--job_endpoint localhost:8099 \
 		--environment_type LOOPBACK \
+		--job_name beam-flink-example)
+
+run-beam-flink-kafka-example: init-topics
+	@(cd beam-python && uv run fresh-mint flink_kafka_example \
+		--runner PortableRunner \
+		--job_endpoint localhost:8099 \
+		--environment_type EXTERNAL \
+		--environment_config localhost:50000 \
 		--streaming \
-		--job_name beam-tumbling-window-python)
+		--job_name beam-flink-kafka-example)
 
-# Kafka Topics from config.yaml
-INPUT_TOPIC := $(shell yq '.kafka.topics.input_events' config.yaml)
-TUMBLING_OUT := $(shell yq '.kafka.topics.tumbling_window_out' config.yaml)
-SLIDING_OUT := $(shell yq '.kafka.topics.sliding_window_out' config.yaml)
-SESSION_OUT := $(shell yq '.kafka.topics.session_window_out' config.yaml)
-BEAM_OUT := $(shell yq '.kafka.topics.beam_tumbling_window_out' config.yaml)
+submit-beam-tumbling: init-topics
+	@(cd beam-python && uv run fresh-mint tumbling_window \
+		--runner PortableRunner \
+		--job_endpoint localhost:8099 \
+		--environment_type EXTERNAL \
+		--environment_config localhost:50000 \
+		--streaming \
+		--job_name beam-tumbling-window)
 
-KAFKA_TOPICS = $(INPUT_TOPIC) $(TUMBLING_OUT) $(SLIDING_OUT) $(SESSION_OUT) $(BEAM_OUT)
+# Flink Java Jobs
 init-topics: .env
-	@for topic in $(KAFKA_TOPICS); do \
-		echo "Creating topic: $$topic"; \
+	@for topic in $(shell yq '.kafka.topics[]' config.yaml); do \
 		docker compose exec kafka kafka-topics --create --topic $$topic --bootstrap-server localhost:9092 --partitions 2 --replication-factor 1 --if-not-exists; \
 	done
 
 submit-flink-all: submit-flink-tumbling submit-flink-sliding submit-flink-session
 
 submit-flink-tumbling: init-topics build
-	@echo "🚀 Submitting Flink TumblingWindowJob..."
 	docker compose exec jobmanager flink run $(FLINK_JOB_OPTIONS) --class org.example.flink.TumblingWindowJob /opt/flink/usrlib/$(JAR_FILE)
 
 submit-flink-sliding: init-topics build
-	@echo "🚀 Submitting Flink SlidingWindowJob..."
 	docker compose exec jobmanager flink run $(FLINK_JOB_OPTIONS) --class org.example.flink.SlidingWindowJob /opt/flink/usrlib/$(JAR_FILE)
 
 submit-flink-session: init-topics build
-	@echo "🚀 Submitting Flink SessionWindowJob..."
 	docker compose exec jobmanager flink run $(FLINK_JOB_OPTIONS) --class org.example.flink.SessionWindowJob /opt/flink/usrlib/$(JAR_FILE)
 
 cancel-all:
-	@echo "🛑 Cancelling all running Flink jobs..."
-	@docker compose exec -T jobmanager flink list -r 2>/dev/null | grep 'RUNNING' | awk '{print $$4}' | xargs -r -I {} docker compose exec -T jobmanager flink cancel {} || echo "No running jobs to cancel."
-
-# Monitoring & Debugging
-# ----------------------
-logs:
-	docker compose logs -f
+	@docker compose exec -T jobmanager flink list -r 2>/dev/null | grep 'RUNNING' | awk '{print $$4}' | xargs -r -I {} docker compose exec -T jobmanager flink cancel {} || echo "No jobs to cancel."
 
 logs-flink:
-	@echo "📊 Watching Flink job results (Ctrl+C to stop)..."
 	@docker compose logs -f taskmanager | grep --line-buffered -E "Window Result"

@@ -5,17 +5,15 @@ from apache_beam.options.pipeline_options import PipelineOptions
 
 
 def run(argv=None):
-    # PipelineOptions will handle standard Beam/Flink flags if provided in argv
     options = PipelineOptions(argv)
 
-    # Set default runner and endpoint if not provided
     if not options.get_all_options().get("runner"):
         options = PipelineOptions(
             [
                 "--runner=PortableRunner",
                 "--job_endpoint=localhost:8099",
                 "--environment_type=LOOPBACK",
-                "--job_name=beam-flink-bridge-test",
+                "--job_name=beam-flink-example",
             ]
         )
 
@@ -24,7 +22,7 @@ def run(argv=None):
             p
             | "CreateNumbers" >> beam.Create([1, 2, 3, 4, 5])
             | "Square" >> beam.Map(lambda x: x * x)
-            | "Print" >> beam.Map(lambda x: print(f"✨ Flink Example Result: {x}"))
+            | "Print" >> beam.Map(lambda x: print(f"✨ Result: {x}"))
         )
 
 
