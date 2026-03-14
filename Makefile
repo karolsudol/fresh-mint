@@ -33,10 +33,10 @@ help:
 	@echo ""
 	@echo "  Deploy & Manage Flink Jobs:"
 	@echo "    init-topics     - Create all necessary Kafka topics for the windowing jobs."
-	@echo "    submit-all      - Submit all three windowing Flink jobs to the cluster."
-	@echo "    submit-tumbling - Submit only the Tumbling Window job."
-	@echo "    submit-sliding  - Submit only the Sliding Window job."
-	@echo "    submit-session  - Submit only the Session Window job."
+	@echo "    submit-flink-all - Submit all three windowing Flink jobs to the cluster."
+	@echo "    submit-flink-tumbling - Submit only the Flink Tumbling Window job."
+	@echo "    submit-flink-sliding  - Submit only the Flink Sliding Window job."
+	@echo "    submit-flink-session  - Submit only the Flink Session Window job."
 	@echo "    cancel-all      - Cancel all running Flink jobs."
 	@echo ""
 	@echo "  Monitoring & Debugging:"
@@ -131,18 +131,18 @@ init-topics: .env
 		docker compose exec kafka kafka-topics --create --topic $$topic --bootstrap-server localhost:9092 --partitions 2 --replication-factor 1 --if-not-exists; \
 	done
 
-submit-all: submit-tumbling submit-sliding submit-session
+submit-flink-all: submit-flink-tumbling submit-flink-sliding submit-flink-session
 
-submit-tumbling: init-topics build
-	@echo "🚀 Submitting TumblingWindowJob..."
+submit-flink-tumbling: init-topics build
+	@echo "🚀 Submitting Flink TumblingWindowJob..."
 	docker compose exec jobmanager flink run $(FLINK_JOB_OPTIONS) --class org.example.flink.TumblingWindowJob /opt/flink/usrlib/$(JAR_FILE)
 
-submit-sliding: init-topics build
-	@echo "🚀 Submitting SlidingWindowJob..."
+submit-flink-sliding: init-topics build
+	@echo "🚀 Submitting Flink SlidingWindowJob..."
 	docker compose exec jobmanager flink run $(FLINK_JOB_OPTIONS) --class org.example.flink.SlidingWindowJob /opt/flink/usrlib/$(JAR_FILE)
 
-submit-session: init-topics build
-	@echo "🚀 Submitting SessionWindowJob..."
+submit-flink-session: init-topics build
+	@echo "🚀 Submitting Flink SessionWindowJob..."
 	docker compose exec jobmanager flink run $(FLINK_JOB_OPTIONS) --class org.example.flink.SessionWindowJob /opt/flink/usrlib/$(JAR_FILE)
 
 cancel-all:

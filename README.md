@@ -52,12 +52,21 @@ make build
 make build-rust
 ```
 
-**3. Submit the Flink Jobs**
-This command will automatically create the necessary Kafka topics and submit all three windowing jobs to the Flink cluster.
-```bash
-make submit-all
-```
-You should see `TumblingWindowJob`, `SlidingWindowJob`, and `SessionWindowJob` running in the Flink Dashboard.
+**3. Submit the Flink Jobs (Java)**
+You can submit all jobs at once or individually. These commands automatically create Kafka topics and build the JAR.
+
+- **Submit all three windows:**
+  ```bash
+  make submit-flink-all
+  ```
+
+- **Submit individual windows:**
+  ```bash
+  make submit-flink-tumbling  # Fixed 10s windows
+  make submit-flink-sliding   # 10s windows, sliding every 5s
+  make submit-flink-session   # Windows based on 30s inactivity
+  ```
+You should see `TumblingWindowJob`, `SlidingWindowJob`, and `SessionWindowJob` running in the [Flink Dashboard](http://localhost:8081).
 
 **4. Run the Producer and Consumer**
 Open two separate terminal windows for this step.
@@ -123,7 +132,7 @@ make run-beam-tumbling
 ```
 
 **3. Tumbling Window Job (FlinkRunner)**
-Submit the streaming job to the Flink cluster (using the **LOOPBACK** environment).
+Submit the streaming job to the Flink cluster. This uses the Beam Job Server to translate the Python pipeline for the Flink engine.
 ```bash
 make submit-beam
 ```
