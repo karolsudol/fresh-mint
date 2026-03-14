@@ -122,11 +122,11 @@ Located in `beam-python/`, this project uses **Apache Beam 2.71.0** with the Pyt
 **1. WordCount Example (DirectRunner)**
 Run a simple batch job that counts words in `sample.txt`, writes to `output.txt`, and prints top statistics to the console.
 ```bash
-make run-beam-example
+make run-beam-wordcount
 ```
 
 **2. Tumbling Window Job (DirectRunner)**
-Run the streaming window job locally, reading from and writing to Kafka.
+Run the streaming window job locally using your machine's resources, reading from and writing to Kafka.
 ```bash
 make run-beam-tumbling
 ```
@@ -134,7 +134,7 @@ make run-beam-tumbling
 **3. Tumbling Window Job (FlinkRunner)**
 Submit the streaming job to the Flink cluster. This uses the Beam Job Server to translate the Python pipeline for the Flink engine.
 ```bash
-make submit-beam
+make submit-beam-tumbling
 ```
 *Note: For production, you would typically use a Docker container for the environment (`--environment_type DOCKER`).*
 

@@ -27,9 +27,9 @@ help:
 	@echo "  Run Applications:"
 	@echo "    run-producer    - Run the Rust event producer (continuously sends data to Kafka)."
 	@echo "    run-consumer    - Run the Rust window results consumer (logs Flink job output)."
-	@echo "    run-beam-example - Run the Python Beam wordcount example locally."
-	@echo "    run-beam-tumbling - Run the Python Beam Tumbling Window job locally."
-	@echo "    submit-beam      - Submit the Python Beam Tumbling Window job to the Flink cluster."
+	@echo "    run-beam-wordcount - Run the Python Beam wordcount example locally."
+	@echo "    run-beam-tumbling - Run the Python Beam Tumbling Window job locally (DirectRunner)."
+	@echo "    submit-beam-tumbling - Submit the Python Beam Tumbling Window job to Flink cluster."
 	@echo ""
 	@echo "  Deploy & Manage Flink Jobs:"
 	@echo "    init-topics     - Create all necessary Kafka topics for the windowing jobs."
@@ -99,7 +99,7 @@ run-consumer:
 	@echo "Starting Rust window results consumer... (Press Ctrl+C to stop)"
 	@(cd rust-consumer && cargo run)
 
-run-beam-example:
+run-beam-wordcount:
 	@echo "Starting Python Beam WordCount example..."
 	@(cd beam-python && uv run fresh-mint wordcount_example)
 
@@ -107,10 +107,8 @@ run-beam-tumbling:
 	@echo "Starting Python Beam Tumbling Window job locally..."
 	@(cd beam-python && uv run fresh-mint tumbling_window --bootstrap_servers localhost:9092)
 
-run-beam: run-beam-tumbling
-
-submit-beam: init-topics
-	@echo "Submitting Python Beam Tumbling Window job via Job Server..."
+submit-beam-tumbling: init-topics
+	@echo "🚀 Submitting Python Beam Tumbling Window job via Job Server..."
 	@(cd beam-python && uv run fresh-mint tumbling_window \
 		--runner PortableRunner \
 		--job_endpoint localhost:8099 \
