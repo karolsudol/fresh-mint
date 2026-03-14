@@ -104,6 +104,15 @@ run-beam-flink-example:
 	@echo "Starting Python Beam Flink Example (Bridge test)..."
 	@(cd beam-python && uv run fresh-mint flink_example)
 
+run-beam-kafka-test: init-topics
+	@echo "Starting Python Beam Kafka Test (Reading raw events)..."
+	@(cd beam-python && uv run fresh-mint kafka_test \
+		--runner PortableRunner \
+		--job_endpoint localhost:8099 \
+		--environment_type LOOPBACK \
+		--streaming \
+		--job_name beam-kafka-test)
+
 run-beam-wordcount:
 	@echo "Starting Python Beam WordCount example..."
 	@(cd beam-python && uv run fresh-mint wordcount_example)

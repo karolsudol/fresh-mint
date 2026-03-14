@@ -96,6 +96,21 @@ Open two separate terminal windows for this step.
   Random Data)                           |                   +-------------------------+  |
                                +------------------>|    SessionWindowJob     +--+
                                                    +-------------------------+
+                               |
+                               |                   +-------------------------+
+                               |                   |   Beam Job Server       |
+                               |                   |    (Translator)         |
+                               |                   +-----------+-------------+
+                               |                               |
+                               |                   +-----------v-------------+
+                               +------------------>|  beam-tumbling-window   |
+                                                   |    (Python / Beam)      |
+                                                   +-----------+-------------+
+                                                               | (gRPC)
+                                                   +-----------v-------------+
+                                                   |   beam-worker-pool      |
+                                                   |    (Python Runtime)     |
+                                                   +-------------------------+
 ```
 
 ### Data Flow
