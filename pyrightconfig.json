@@ -1,0 +1,11 @@
+{
+  "include": ["beam-python"],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/target",
+    "beam-python/.venv"
+  ],
+  "reportPrivateImportUsage": false,
+  "reportUnusedExpression": false
+}

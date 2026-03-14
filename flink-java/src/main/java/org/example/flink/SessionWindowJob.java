@@ -9,7 +9,7 @@ import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsIni
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
-import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.streaming.api.windowing.assigners.EventTimeSessionWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
@@ -26,31 +26,32 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * Demonstrates a tumbling window which sums event values over fixed, 10-second, non-overlapping windows.
- * This job uses Event Time, processing events based on their embedded timestamps.
+ * Demonstrates an event time session window, which groups events into sessions based on a gap of inactivity.
+ * An open session window will close if no events appear for a specified amount of time (the session gap).
+ * This job uses a 30-second session gap.
  *
  * The pipeline:
  * 1. Reads JSON events from a Kafka topic ('input_events').
  * 2. Parses them into Event POJOs.
  * 3. Assigns watermarks to handle out-of-order events.
  * 4. Keys the stream by event ID.
- * 5. Applies a 10-second tumbling window.
+ * 5. Applies a session window with a 30-second inactivity gap.
  * 6. Aggregates the sum of event values within the window.
  * 7. Creates a WindowResult object containing the aggregation details.
- * 8. Sinks the results to a Kafka topic ('tumbling_window_out').
+ * 8. Sinks the results to a Kafka topic ('session_window_out').
  * 9. (TODO) Sinks the results to an Iceberg table.
  */
-public class TumblingWindowJob {
-    private static final Logger LOG = LoggerFactory.getLogger(TumblingWindowJob.class);
+public class SessionWindowJob {
+    private static final Logger LOG = LoggerFactory.getLogger(SessionWindowJob.class);
 
     // Flink Job Settings
-    private static final String JOB_NAME = "TumblingWindowJob";
+    private static final String JOB_NAME = "SessionWindowJob";
 
     // Kafka Settings
-    private static final String KAFKA_BOOTSTRAP_SERVERS = System.getenv().getOrDefault("BOOTSTRAP_SERVERS", "kafka:29092");
-    private static final String INPUT_TOPIC = "input_events";
-    private static final String OUTPUT_TOPIC = "tumbling_window_out";
-    private static final String KAFKA_GROUP_ID = "tumbling-window-group";
+    private static final String KAFKA_BOOTSTRAP_SERVERS = System.getenv().getOrDefault("BOOTSTRAP_SERVERS", "localhost:9092");
+    private static final String INPUT_TOPIC = System.getenv().getOrDefault("INPUT_TOPIC", "input-events");
+    private static final String OUTPUT_TOPIC = System.getenv().getOrDefault("SESSION_OUT", "session-window-out");
+    private static final String KAFKA_GROUP_ID = "session-window-group";
 
     public static void main(String[] args) throws Exception {
         // 1. Set up the streaming execution environment
@@ -69,7 +70,6 @@ public class TumblingWindowJob {
                 .build();
 
         // 3. Create a DataStream from the source, and assign Timestamps and Watermarks
-        // We allow for a 2-second out-of-orderness buffer.
         DataStream<Event> events = env.fromSource(source,
                 WatermarkStrategy.<Event>forBoundedOutOfOrderness(Duration.ofSeconds(2))
                         .withTimestampAssigner((event, timestamp) -> event.timestamp.toEpochMilli()),
@@ -78,7 +78,7 @@ public class TumblingWindowJob {
         // 4. The core windowing logic
         DataStream<WindowResult> windowedSum = events
                 .keyBy(event -> event.id)
-                .window(TumblingEventTimeWindows.of(Time.seconds(10)))
+                .window(EventTimeSessionWindows.withGap(Time.seconds(30)))
                 .aggregate(new SumAggregator(), new WindowResultProcessor());
 
         // 5. Create a Kafka Sink
@@ -93,11 +93,9 @@ public class TumblingWindowJob {
 
         // 6. Sink the results to Kafka
         windowedSum.sinkTo(kafkaSink).name("Kafka Sink");
-        windowedSum.print("Tumbling Window Result"); // Also print to logs for debugging
+        windowedSum.print("Session Window Result"); // Also print to logs for debugging
 
         // TODO: Add Iceberg Sink
-        // FlinkSink<RowData> icebergSink = ...
-        // windowedSum.map(WindowResult::toRowData).sinkTo(icebergSink);
 
         // 7. Execute the Flink job
         env.execute(JOB_NAME);
@@ -130,16 +128,15 @@ public class TumblingWindowJob {
 
     /**
      * A ProcessWindowFunction that wraps the aggregated result into a WindowResult object.
-     * This provides access to the window's metadata, such as start and end times.
      */
     private static class WindowResultProcessor extends ProcessWindowFunction<Double, WindowResult, String, TimeWindow> {
         @Override
         public void process(String key, Context context, Iterable<Double> aggregates, Collector<WindowResult> out) {
-            Double sum = aggregates.iterator().next(); // We know there is only one element
+            Double sum = aggregates.iterator().next();
             Instant windowStart = Instant.ofEpochMilli(context.window().getStart());
             Instant windowEnd = Instant.ofEpochMilli(context.window().getEnd());
 
-            out.collect(new WindowResult(key, sum, windowStart, windowEnd, "Tumbling"));
+            out.collect(new WindowResult(key, sum, windowStart, windowEnd, "Session"));
         }
     }
 }

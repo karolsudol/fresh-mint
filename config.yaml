@@ -1,0 +1,11 @@
+# Central Configuration for Fresh Mint
+# =================================
+
+kafka:
+  bootstrap_servers: "localhost:9092"
+  topics:
+    input_events: "input-events"
+    tumbling_window_out: "tumbling-window-out"
+    sliding_window_out: "sliding-window-out"
+    session_window_out: "session-window-out"
+    beam_tumbling_window_out: "beam-tumbling-window-out"

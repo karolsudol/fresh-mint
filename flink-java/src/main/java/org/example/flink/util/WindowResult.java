@@ -27,11 +27,11 @@ public class WindowResult {
     @Override
     public String toString() {
         return "WindowResult{" +
-                "key='" + key + ''' +
+                "key='" + key + '\'' +
                 ", value=" + value +
                 ", windowStart=" + windowStart +
                 ", windowEnd=" + windowEnd +
-                ", windowType='" + windowType + ''' +
+                ", windowType='" + windowType + '\'' +
                 '}';
     }
 }

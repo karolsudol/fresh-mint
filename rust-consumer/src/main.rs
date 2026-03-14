@@ -103,9 +103,20 @@ async fn consume(brokers: &str, group_id: &str, topics: &[&str]) {
 
 #[tokio::main]
 async fn main() {
-    let kafka_bootstrap_servers = std::env::var("BOOTSTRAP_SERVERS").unwrap_or_else(|_| "localhost:9092".to_string());
+    let kafka_bootstrap_servers =
+        std::env::var("BOOTSTRAP_SERVERS").unwrap_or_else(|_| "localhost:9092".to_string());
     let group_id = "rust-consumer-group";
-    let topics = ["tumbling_window_out", "sliding_window_out", "session_window_out"];
+    let tumbling_out = std::env::var("TUMBLING_OUT").unwrap_or_else(|_| "tumbling-window-out".to_string());
+    let sliding_out = std::env::var("SLIDING_OUT").unwrap_or_else(|_| "sliding-window-out".to_string());
+    let session_out = std::env::var("SESSION_OUT").unwrap_or_else(|_| "session-window-out".to_string());
+    let beam_out = std::env::var("BEAM_OUT").unwrap_or_else(|_| "beam-tumbling-window-out".to_string());
+
+    let topics = [
+        tumbling_out.as_str(),
+        sliding_out.as_str(),
+        session_out.as_str(),
+        beam_out.as_str(),
+    ];
     
     println!("Starting consumer...");
     println!("Connecting to Kafka at: {}", kafka_bootstrap_servers);
