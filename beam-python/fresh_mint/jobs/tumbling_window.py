@@ -1,4 +1,3 @@
-import argparse
 import logging
 import os
 import typing
@@ -12,29 +11,12 @@ from fresh_mint.transforms import AssignTimestamps, FormatWindowResult, ParseEve
 
 
 def run_tumbling_window(argv=None):
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--bootstrap_servers", default="localhost:9092", help="Kafka bootstrap servers"
-    )
-    parser.add_argument(
-        "--input_topic",
-        default=os.environ.get("INPUT_TOPIC", "input-events"),
-        help="Kafka topic to read from",
-    )
-    parser.add_argument(
-        "--output_topic",
-        default=os.environ.get("BEAM_OUT", "beam-tumbling-window-out"),
-        help="Kafka topic to write results to",
-    )
+    # PipelineOptions will handle all Beam/Flink flags from argv automatically
+    pipeline_options = PipelineOptions(argv)
 
-    known_args, pipeline_args = parser.parse_known_args(argv)
-    pipeline_options = PipelineOptions(pipeline_args)
-
-    # Force LOOPBACK for local portability to avoid searching for 'docker'
-    from apache_beam.options.pipeline_options import PortableOptions
-
-    portable_options = pipeline_options.view_as(PortableOptions)
-    portable_options.environment_type = "LOOPBACK"
+    bootstrap_servers = os.environ.get("BOOTSTRAP_SERVERS", "localhost:9092")
+    input_topic = os.environ.get("INPUT_TOPIC", "input-events")
+    output_topic = os.environ.get("BEAM_OUT", "beam-tumbling-window-out")
 
     # We use save_main_session so that worker nodes can access global imports.
     pipeline_options.view_as(SetupOptions).save_main_session = True
@@ -42,9 +24,10 @@ def run_tumbling_window(argv=None):
     with beam.Pipeline(options=pipeline_options) as p:
         # Define the pipeline steps
         input_data = p | "ReadFromKafka" >> ReadFromKafka(
-            consumer_config={"bootstrap.servers": known_args.bootstrap_servers},
-            topics=[known_args.input_topic],
+            consumer_config={"bootstrap.servers": bootstrap_servers},
+            topics=[input_topic],
             max_num_records=None,
+            expansion_service="localhost:8097",
         )
 
         parsed_events = (
@@ -68,8 +51,9 @@ def run_tumbling_window(argv=None):
         ).with_output_types(typing.Tuple[bytes, bytes])
 
         formatted_results | "WriteToKafka" >> WriteToKafka(
-            producer_config={"bootstrap.servers": known_args.bootstrap_servers},
-            topic=known_args.output_topic,
+            producer_config={"bootstrap.servers": bootstrap_servers},
+            topic=output_topic,
+            expansion_service="localhost:8097",
         )
 
 
