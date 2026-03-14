@@ -41,6 +41,8 @@ iceberg-warehouse/
 gemini.md
 
 # Build artifacts
+.m2/
+.env
 Cargo.lock
 dependency-reduced-pom.xml
 /make

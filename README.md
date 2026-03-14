@@ -2,6 +2,20 @@
 
 Hands-on demo for learning Apache Flink and Apache Kafka streaming concepts through practical, real-world examples.
 
+## ⚙️ Configuration
+
+The project uses a central `config.yaml` at the root as the "Source of Truth" for Kafka topic names and bootstrap servers.
+
+- **`config.yaml`**: Edit topic names here once.
+- **`.env`**: Automatically generated from `config.yaml` when running `make up`.
+- **Cross-Project**: Java, Rust, and Python components all read these values from environment variables (with sensible defaults for local development).
+
+To propagate changes from `config.yaml`:
+```bash
+make down
+make up
+```
+
 ## End-to-End Windowing Demo
 
 This project demonstrates an end-to-end streaming pipeline that uses multiple Flink and Beam jobs to perform different types of windowed aggregations on a stream of events.
@@ -67,7 +81,7 @@ Open two separate terminal windows for this step.
                                |                   +-------------------------+  |
                                |                                              |
 +---------------+      +----------------+      +-------------------------+  |  v
-| Rust Producer +------>  input_events  +------>|    SlidingWindowJob     +--+-->+ Rust Consumer
+| Rust Producer +------>  input-events  +------>|    SlidingWindowJob     +--+-->+ Rust Consumer
 +---------------+      +----------------+      +-------------------------+  |  ^ (Logs to console)
  (Generates      (Kafka Topic, 2 Parts.) |                                  |  |
   Random Data)                           |                   +-------------------------+  |
@@ -76,9 +90,9 @@ Open two separate terminal windows for this step.
 ```
 
 ### Data Flow
-1.  `rust-producer` generates random JSON events and sends them to the `input_events` Kafka topic.
-2.  Each of the three Flink jobs (`Tumbling...`, `Sliding...`, `Session...`) independently reads from `input_events`.
-3.  Each job performs its windowed aggregation and writes a `WindowResult` JSON object to its dedicated output topic (`tumbling_window_out`, `sliding_window_out`, `session_window_out`).
+1.  `rust-producer` generates random JSON events and sends them to the `input-events` Kafka topic.
+2.  Each of the three Flink jobs (`Tumbling...`, `Sliding...`, `Session...`) independently reads from `input-events`.
+3.  Each job performs its windowed aggregation and writes a `WindowResult` JSON object to its dedicated output topic (`tumbling-window-out`, `sliding-window-out`, `session-window-out`).
 4.  `rust-consumer` subscribes to all three output topics and prints the results it receives.
 
 ## Flink Jobs

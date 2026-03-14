@@ -1,15 +1,14 @@
 name: flink-kafka
 services:
-  # Kafka in KRaft mode (No Zookeeper)
+  # Kafka in KRaft mode
   kafka:
     image: confluentinc/cp-kafka:7.8.0
     container_name: flink-kafka-broker
-    ports:
-      - "9092:9092"
+    network_mode: host
     environment:
       KAFKA_NODE_ID: 1
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -17,25 +16,21 @@ services:
       KAFKA_JMX_PORT: 9101
       KAFKA_JMX_HOSTNAME: localhost
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
-      KAFKA_LISTENERS: PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:29093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:29093
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
     mem_limit: 1g
-    healthcheck:
-      test: [ "CMD", "bash", "-c", "cub kafka-ready -b kafka:29092 1 30" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   # Flink JobManager
   jobmanager:
-    image: flink:1.20-java11
+    image: flink:1.19-java11
     container_name: flink-jobmanager
     network_mode: host
     command: jobmanager
+    env_file: .env
     volumes:
       - .:/opt/flink/usrlib
     environment:
@@ -46,12 +41,13 @@ services:
 
   # Flink TaskManager
   taskmanager:
-    image: flink:1.20-java11
+    image: flink:1.19-java11
     container_name: flink-taskmanager
     network_mode: host
     depends_on:
       - jobmanager
     command: taskmanager
+    env_file: .env
     volumes:
       - .:/opt/flink/usrlib
     environment:
@@ -59,17 +55,33 @@ services:
         FLINK_PROPERTIES=
         jobmanager.rpc.address: localhost
         taskmanager.numberOfTaskSlots: 4
+        taskmanager.memory.jvm-metaspace.size: 512m
     mem_limit: 1.5g
 
-  # Kafka UI for visual monitoring
+  # Beam Job Server
+  beam-job-server:
+    image: apache/beam_flink1.19_job_server:latest
+    container_name: beam-job-server
+    network_mode: host
+    command: >
+      --flink-master-url=localhost:8081
+      --job-port=8099
+      --artifact-port=8098
+      --expansion-port=8097
+      --default-environment-type=LOOPBACK
+    depends_on:
+      - jobmanager
+    mem_limit: 1g
+
+  # Kafka UI
   kafka-ui:
     image: provectuslabs/kafka-ui:v0.7.2
     container_name: flink-kafka-ui
-    ports:
-      - "8080:8080"
+    network_mode: host
     environment:
       KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: localhost:9092
+      KAFKA_CLUSTERS_0_METRICS_TYPE: JMX
       KAFKA_CLUSTERS_0_METRICS_PORT: 9101
       DYNAMIC_CONFIG_ENABLED: 'true'
     mem_limit: 768m

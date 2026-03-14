@@ -48,9 +48,9 @@ public class SlidingWindowJob {
     private static final String JOB_NAME = "SlidingWindowJob";
 
     // Kafka Settings
-    private static final String KAFKA_BOOTSTRAP_SERVERS = System.getenv().getOrDefault("BOOTSTRAP_SERVERS", "kafka:29092");
-    private static final String INPUT_TOPIC = "input_events";
-    private static final String OUTPUT_TOPIC = "sliding_window_out";
+    private static final String KAFKA_BOOTSTRAP_SERVERS = System.getenv().getOrDefault("BOOTSTRAP_SERVERS", "localhost:9092");
+    private static final String INPUT_TOPIC = System.getenv().getOrDefault("INPUT_TOPIC", "input-events");
+    private static final String OUTPUT_TOPIC = System.getenv().getOrDefault("SLIDING_OUT", "sliding-window-out");
     private static final String KAFKA_GROUP_ID = "sliding-window-group";
 
     public static void main(String[] args) throws Exception {

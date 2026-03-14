@@ -16,7 +16,7 @@ struct Event {
 #[tokio::main]
 async fn main() {
     let kafka_bootstrap_servers = std::env::var("BOOTSTRAP_SERVERS").unwrap_or_else(|_| "localhost:9092".to_string());
-    let topic_name = "input_events";
+    let topic_name = std::env::var("INPUT_TOPIC").unwrap_or_else(|_| "input-events".to_string());
 
     println!("Connecting to Kafka at: {}", kafka_bootstrap_servers);
     println!("Producing to topic: {}", topic_name);
@@ -41,7 +41,7 @@ async fn main() {
 
         let payload = serde_json::to_string(&event).expect("Failed to serialize event");
 
-        let record = FutureRecord::to(topic_name)
+        let record = FutureRecord::to(&topic_name)
             .payload(&payload)
             .key(&event.id);
 

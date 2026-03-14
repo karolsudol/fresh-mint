@@ -5,7 +5,7 @@
 # ---------
 # JAR_FILE is located in flink-java/target relative to the root
 JAR_FILE=flink-java/target/flink-kafka-demo-1.0-SNAPSHOT.jar
-FLINK_JOB_OPTIONS=--class-detached
+FLINK_JOB_OPTIONS=--detached
 
 # Help
 # ----
@@ -46,7 +46,17 @@ help:
 
 # Infrastructure Management
 # -------------------------
-up:
+.PHONY: .env
+.env: config.yaml
+	@echo "Generating .env from config.yaml..."
+	@echo "BOOTSTRAP_SERVERS=$(shell yq '.kafka.bootstrap_servers' config.yaml)" > .env
+	@echo "INPUT_TOPIC=$(INPUT_TOPIC)" >> .env
+	@echo "TUMBLING_OUT=$(TUMBLING_OUT)" >> .env
+	@echo "SLIDING_OUT=$(SLIDING_OUT)" >> .env
+	@echo "SESSION_OUT=$(SESSION_OUT)" >> .env
+	@echo "BEAM_OUT=$(BEAM_OUT)" >> .env
+
+up: .env
 	docker compose up -d
 	@echo "\n🚀 Services started!"
 	@echo "📊 Flink Dashboard: [http://localhost:8081]"
@@ -67,7 +77,11 @@ down:
 # ---------------
 build:
 	@echo "Building Flink Java JAR..."
-	docker run --rm -v "$$(pwd)/flink-java":/usr/src/mymaven -w /usr/src/mymaven maven:3.9.9-eclipse-temurin-11 mvn clean package -DskipTests
+	docker run --rm \
+		-v "$$(pwd)/flink-java":/usr/src/mymaven \
+		-v "$$(pwd)/.m2":/root/.m2 \
+		-w /usr/src/mymaven \
+		maven:3.9.9-eclipse-temurin-11 mvn clean package -DskipTests
 
 build-rust:
 	@echo "Building Rust producer..."
@@ -96,17 +110,22 @@ run-beam-tumbling:
 run-beam: run-beam-tumbling
 
 submit-beam: init-topics
-	@echo "Submitting Python Beam Tumbling Window job to Flink cluster..."
+	@echo "Submitting Python Beam Tumbling Window job via Job Server..."
 	@(cd beam-python && uv run fresh-mint tumbling_window \
-		--runner FlinkRunner \
-		--flink_master localhost:8081 \
-		--environment_type LOOPBACK \
-		--bootstrap_servers localhost:9092)
+		--runner PortableRunner \
+		--job_endpoint localhost:8099 \
+		--bootstrap_servers localhost:9092 \
+		--environment_type LOOPBACK)
 
-# Deploy & Manage Flink Jobs
-# --------------------------
-KAFKA_TOPICS = input_events tumbling_window_out sliding_window_out session_window_out beam_tumbling_window_out
-init-topics:
+# Kafka Topics from config.yaml
+INPUT_TOPIC := $(shell yq '.kafka.topics.input_events' config.yaml)
+TUMBLING_OUT := $(shell yq '.kafka.topics.tumbling_window_out' config.yaml)
+SLIDING_OUT := $(shell yq '.kafka.topics.sliding_window_out' config.yaml)
+SESSION_OUT := $(shell yq '.kafka.topics.session_window_out' config.yaml)
+BEAM_OUT := $(shell yq '.kafka.topics.beam_tumbling_window_out' config.yaml)
+
+KAFKA_TOPICS = $(INPUT_TOPIC) $(TUMBLING_OUT) $(SLIDING_OUT) $(SESSION_OUT) $(BEAM_OUT)
+init-topics: .env
 	@for topic in $(KAFKA_TOPICS); do \
 		echo "Creating topic: $$topic"; \
 		docker compose exec kafka kafka-topics --create --topic $$topic --bootstrap-server localhost:9092 --partitions 2 --replication-factor 1 --if-not-exists; \

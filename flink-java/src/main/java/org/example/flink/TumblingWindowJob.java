@@ -47,9 +47,9 @@ public class TumblingWindowJob {
     private static final String JOB_NAME = "TumblingWindowJob";
 
     // Kafka Settings
-    private static final String KAFKA_BOOTSTRAP_SERVERS = System.getenv().getOrDefault("BOOTSTRAP_SERVERS", "kafka:29092");
-    private static final String INPUT_TOPIC = "input_events";
-    private static final String OUTPUT_TOPIC = "tumbling_window_out";
+    private static final String KAFKA_BOOTSTRAP_SERVERS = System.getenv().getOrDefault("BOOTSTRAP_SERVERS", "localhost:9092");
+    private static final String INPUT_TOPIC = System.getenv().getOrDefault("INPUT_TOPIC", "input-events");
+    private static final String OUTPUT_TOPIC = System.getenv().getOrDefault("TUMBLING_OUT", "tumbling-window-out");
     private static final String KAFKA_GROUP_ID = "tumbling-window-group";
 
     public static void main(String[] args) throws Exception {

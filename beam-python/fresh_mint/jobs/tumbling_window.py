@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import typing
 
 import apache_beam as beam
@@ -16,16 +17,24 @@ def run_tumbling_window(argv=None):
         "--bootstrap_servers", default="localhost:9092", help="Kafka bootstrap servers"
     )
     parser.add_argument(
-        "--input_topic", default="input_events", help="Kafka topic to read from"
+        "--input_topic",
+        default=os.environ.get("INPUT_TOPIC", "input-events"),
+        help="Kafka topic to read from",
     )
     parser.add_argument(
         "--output_topic",
-        default="beam_tumbling_window_out",
-        help="Kafka topic to write to",
+        default=os.environ.get("BEAM_OUT", "beam-tumbling-window-out"),
+        help="Kafka topic to write results to",
     )
 
     known_args, pipeline_args = parser.parse_known_args(argv)
     pipeline_options = PipelineOptions(pipeline_args)
+
+    # Force LOOPBACK for local portability to avoid searching for 'docker'
+    from apache_beam.options.pipeline_options import PortableOptions
+
+    portable_options = pipeline_options.view_as(PortableOptions)
+    portable_options.environment_type = "LOOPBACK"
 
     # We use save_main_session so that worker nodes can access global imports.
     pipeline_options.view_as(SetupOptions).save_main_session = True
